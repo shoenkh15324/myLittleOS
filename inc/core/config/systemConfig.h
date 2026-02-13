@@ -1,0 +1,44 @@
+#pragma once
+/******************************************************************************
+ *  Author : Mingyu Kim
+ *  Created: 2026-02-12
+ ******************************************************************************/
+
+/* [SYSTEM INFO] */
+#define SYSTEM_NAME "DiracOs"
+#define SYSTEM_AUTHOR "Minkyu Kim"
+#define SYSTEM_VERSION_MAJOR 0
+#define SYSTEM_VERSION_MINOR 1
+#define SYSTEM_VERSION_PATCH 0
+
+/* [LOG] */
+#define SYSTEM_LOG_ENABLE 1
+#define SYSTEM_LOG_BACKEND_PRINTF 1
+#define SYSTEM_LOG_BACKEND_PRINTK 2
+#define SYSTEM_LOG_BACKEND_UART 3
+#define SYSTEM_LOG_MODE_SYNC 0
+#define SYSTEM_LOG_MODE_ASYNC 1
+#define SYSTEM_LOG_LEVEL_ERROR 1
+#define SYSTEM_LOG_LEVEL_WARN 2
+#define SYSTEM_LOG_LEVEL_INFO 3
+#define SYSTEM_LOG_LEVEL_DEBUG 4
+#define SYSTEM_LOG_LEVEL_NONE 5
+#define SYSTEM_LOG_COLOR_ENABLE 1
+#define SYSTEM_LOG_TIMESTAMP_ENABLE 1
+
+/* [BUFFER] */
+#define SYSTEM_BUFFER_PEAK_ENABLE 1
+#define SYSTEM_BUFFER_PUSH_OVERWRITE_ENABLE 1
+#define SYSTEM_BUFFER_STATISTICS_ENABLE 1
+
+/* [OSAL] */
+// MEMORY
+#define SYSTEM_OSAL_STATIC_MEM 1
+#define SYSTEM_OSAL_DYNAMIC_MEM 2
+// SYNCHRONIZATION
+#define SYSTEM_OSAL_MUTEX_ENABLE 1
+#define SYSTEM_OSAL_SEMAPHORE_ENABLE 1
+// THREAD
+#define SYSTEM_OSAL_THREAD_ENABLE 1
+// TIMER
+#define SYSTEM_OSAL_TIMER_ENABLE 1
