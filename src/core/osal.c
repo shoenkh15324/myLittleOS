@@ -43,7 +43,7 @@ int64_t osalGetTimeUs(void){
     return 0;
 #endif
 }
-int64_t osalGetTiemNs(void){
+int64_t osalGetTimeNs(void){
 #if APP_OS == OS_LINUX
     struct timespec time;
     clock_gettime(CLOCK_MONOTONIC, &time);
@@ -71,10 +71,11 @@ void osalDelayTick(int tick){
 }
 // Timer
 
+
 // Memory
 #if APP_MEM == SYSTEM_OSAL_STATIC_MEM
-    static uint8_t _memPool[APP_MEM_POOL_SIZE] = {0};
-    static uint8_t _memBlockUsed[APP_MEM_BLOCK_COUNT] = {0}; // 0 = free, 1 = used
+static alignas(max_align_t) uint8_t _memPool[APP_MEM_POOL_SIZE] = {0};
+static bool _memBlockUsed[APP_MEM_BLOCK_COUNT] = {0}; // 0 = free, 1 = used
 #endif
 int osalMalloc(void** ptr, size_t size){
     checkParams(ptr, size);
@@ -89,8 +90,8 @@ int osalMalloc(void** ptr, size_t size){
             return retFail;
         }
         for(int i = 0; i < APP_MEM_BLOCK_COUNT; i++){
-            if (_memBlockUsed[i] == 0) {
-                _memBlockUsed[i] = 1;
+            if(!_memBlockUsed[i]){
+                _memBlockUsed[i] = true;
                 *ptr = &_memPool[i * APP_MEM_BLOCK_SIZE];
                 return retOk;
             }
@@ -113,19 +114,115 @@ int osalFree(void* ptr){
         if((uint8_t*)ptr < _memPool || offset >= APP_MEM_POOL_SIZE){ logError("Out of memory pool range");
             return retFail;
         }
-        int index = offset / APP_MEM_BLOCK_SIZE;
-        _memBlockUsed[index] = 0;
+        if((offset % APP_MEM_BLOCK_SIZE) == 0){
+            int index = offset / APP_MEM_BLOCK_SIZE;
+            _memBlockUsed[index] = 0;
+        }else{ logError("Invaild memory offset");
+            return retFail;
+        }
     #endif
 #else
     //
 #endif
     return retOk;
 }
+
 // Thread
 
 // Mutex
+int osalMutexOpen(osalMutex* this){
+    checkParams(this);
+#if APP_OS == OS_LINUX
+    pthread_mutexattr_t attr;
+    if(pthread_mutexattr_init(&attr)){ logError("pthread_mutexattr_init fail");
+        return retFail;
+    }
+    if(pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE)){ logError("pthread_mutexattr_settype fail");
+        pthread_mutexattr_destroy(&attr);
+        return retFail;
+    }
+    if(pthread_mutex_init(&(this->mutex), &attr)){ logError("pthread_mutex_init fail");
+        return retFail;
+    }
+    if(pthread_mutexattr_destroy(&attr)){ logError("pthread_mutexattr_destroy fail");
+        return retFail;
+    }
+#endif
+    return retOk;
+}
+int osalMutexClose(osalMutex* this){
+    checkParams(this);
+#if APP_OS == OS_LINUX
+    if(pthread_mutex_destroy(&(this->mutex))){ logError("pthread_mutex_destroy fail");
+        return retFail;
+    }
+#endif
+    return retOk;
+}
+int osalMutexLock(osalMutex* this){
+    checkParams(this);
+#if APP_OS == OS_LINUX
+    if(pthread_mutex_lock(&(this->mutex))){ logError("pthread_mutex_lock fail");
+        return retFail;
+    }
+#endif
+    return retOk;
+}
+int osalMutexUnlock(osalMutex* this){
+    checkParams(this);
+#if APP_OS == OS_LINUX
+    if(pthread_mutex_unlock(&(this->mutex))){ logError("pthread_mutex_unlock fail");
+        return retFail;
+    }
+#endif
+    return retOk;
+}
 
 // Semaphore
+int osalSemaphoreOpen(osalSemaphore* this, int count){
+    checkParams(this, count);
+#if APP_OS == OS_LINUX
+    count = (count == -1) ? 32767 : count;
+    if(sem_init(&(this->sema), 0, (unsigned int)count) != 0){ logError("sem_init fail");
+        return retFail;
+    }
+#endif
+    return retOk;
+}
+int osalSemaphoreClose(osalSemaphore* this){
+    checkParams(this);
+#if APP_OS == OS_LINUX
+    if(sem_destroy(&(this->sema)) != 0){ logError("sem_destroy fail");
+        return retFail;
+    }
+#endif
+    return retOk;
+}
+int osalSemaphoreTake(osalSemaphore* this){
+    checkParams(this);
+#if APP_OS == OS_LINUX
+    if(sem_wait(&(this->sema)) != 0){ logError("sem_wait fail");
+        return retFail;
+    }
+#endif
+    return retOk;
+}
+int osalSemaphoreGive(osalSemaphore* this){
+    checkParams(this);
+#if APP_OS == OS_LINUX
+    if(sem_post(&(this->sema)) != 0){ logError("sem_post fail");
+        return retFail;
+    }
+#endif
+    return retOk;
+}
+
+// Etc
+int osalIsInIsr(void){
+#if APP_OS == OS_LINUX
+    return 0; // User-space Linux has no direct ISR access.
+#endif
+}
 
 #ifdef __cplusplus
 }

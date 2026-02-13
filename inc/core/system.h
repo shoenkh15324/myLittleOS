@@ -33,12 +33,6 @@ typedef enum{
     objSyncBegin = 0,
 } objectSync;
 
-typedef struct{
-    uint16_t eventId;
-    void *payload;
-    size_t payloadSize;
-} asyncPacket;
-
 #define checkParams(...) \
     do { \
         const uintptr_t _args[] = { (uintptr_t)(__VA_ARGS__) }; \

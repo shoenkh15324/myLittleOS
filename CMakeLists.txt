@@ -12,6 +12,7 @@ add_executable(dirac_daemon
     src/core/osal.c
     src/core/log.c
     src/core/buffer.c
+    src/core/async.c
     # Driver
     src/driver/driverCommon.c
     # Service
