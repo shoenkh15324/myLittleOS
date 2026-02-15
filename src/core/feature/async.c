@@ -23,12 +23,12 @@ static activeObject* _asyncLookupTarget(uint16_t eventId){
 int asyncSubscribe(activeObject* pActObj, uint16_t startId, uint16_t endId){
     checkParams(pActObj);
     if(_asyncSubCnt >= APP_THREAD_MAX_COUNT){ logError("_asyncSubCnt >= APP_THREAD_MAX_COUNT");
-        _asyncSubscriber[_asyncSubCnt].pActObj = pActObj;
-        _asyncSubscriber[_asyncSubCnt].startId = startId;
-        _asyncSubscriber[_asyncSubCnt].endId = endId;
-        _asyncSubCnt++;
         return retFail;
     }
+    _asyncSubscriber[_asyncSubCnt].pActObj = pActObj;
+    _asyncSubscriber[_asyncSubCnt].startId = startId;
+    _asyncSubscriber[_asyncSubCnt].endId = endId;
+    _asyncSubCnt++;
     return retOk;
 }
 int asyncPush(asyncType type, uint16_t eventId, uintptr_t arg1, uintptr_t arg2, uintptr_t arg3, uintptr_t arg4){
@@ -74,13 +74,19 @@ int asyncPush(asyncType type, uint16_t eventId, uintptr_t arg1, uintptr_t arg2, 
     }
 Exit:
     osalMutexUnlock(&pTarget->objMutex);
-    if(result == retOk) osalSemaphoreGive(&pTarget->objSema);
+    if(result == retOk){
+        osalSemaphoreGive(&pTarget->objSema);
+#if APP_OS == OS_LINUX
+        osalEpollNotify(&pTarget->objEpoll);
+#endif
+    } 
     return result;
 }
-int asyncPop(activeObject* pTarget, asyncPacket* pOutPacket, uint8_t* payloadBuf){
+size_t asyncPop(activeObject* pTarget, asyncPacket* pOutPacket, uint8_t* payloadBuf){
     checkParams(pTarget, pOutPacket);
     osalMutexLock(&pTarget->objMutex, -1);
-    if(bufferPop(&pTarget->eventQueue, pOutPacket, sizeof(asyncPacket)) != sizeof(asyncPacket)){ logError("bufferPop fail");
+    size_t popResult = bufferPop(&pTarget->eventQueue, pOutPacket, sizeof(asyncPacket));
+    if(popResult < 0){ logError("bufferPop fail");
         osalMutexUnlock(&pTarget->objMutex);
         return retFail;
     }
@@ -91,7 +97,7 @@ int asyncPop(activeObject* pTarget, asyncPacket* pOutPacket, uint8_t* payloadBuf
         }
     }
     osalMutexUnlock(&pTarget->objMutex);
-    return retOk;
+    return popResult;
 }
 
 #ifdef __cplusplus

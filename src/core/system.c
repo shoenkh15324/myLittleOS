@@ -11,6 +11,9 @@ int systemClose(void){
 }
 int systemOpen(void){
     logInfo("%s Open / v%d.%d.%d / Author: %s", SYSTEM_NAME, SYSTEM_VERSION_MAJOR, SYSTEM_VERSION_MINOR, SYSTEM_VERSION_PATCH, SYSTEM_AUTHOR);
+    driverCommonOpen();
+    serviceCommonOpen();
     appCommonOpen();
+    while(1){ osalSleepMs(1000); }
     return 0;
 }

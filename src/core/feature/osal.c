@@ -13,6 +13,8 @@ extern "C" {
     #include <unistd.h>
     #include <sys/time.h>
     #include <errno.h>
+    #include <sys/eventfd.h>
+    #include <sys/timerfd.h>
 #endif
 #include "core/feature/log.h"
 
@@ -67,45 +69,35 @@ int osalGetTick(void){
     //
     return 0;
 }
-void osalDelayMs(int ms){
+void osalSleepMs(int ms){
 #if APP_OS == OS_LINUX
     usleep(ms * 1000);
 #endif
 }
-void osalDelayUs(int us){
+void osalSleepUs(int us){
 #if APP_OS == OS_LINUX // Note: In Linux user-space, microsecond delays are not precise due to scheduler and timer resolution.
     usleep(us);
 #endif
 }
 
 // Timer
-#if (APP_TIMER == SYSTEM_OSAL_TIMER_ENABLE) && (APP_OS == OS_LINUX)
-static void _timerCallbackWrapper(union sigval sigval){
-    osalTimer* pTimer = (osalTimer*)sigval.sival_ptr;
-    if(pTimer && pTimer->userCb) pTimer->userCb(pTimer->userArg);
-}
-#endif
 int osalTimerOpen(osalTimer* pHandle, osalTimerCb expiredCallback, int periodMs){
 #if APP_TIMER == SYSTEM_OSAL_TIMER_ENABLE
     checkParams(pHandle, expiredCallback, periodMs);
-    pHandle->userCb = expiredCallback;
-    pHandle->userArg = pHandle;
-    #if APP_OS == OS_LINUX
-        memset(&pHandle->signal, 0, sizeof(struct sigevent));
-        pHandle->signal.sigev_notify = SIGEV_THREAD;
-        pHandle->signal.sigev_notify_function = _timerCallbackWrapper;
-        pHandle->signal.sigev_value.sival_ptr = (void*)pHandle;
-        if(timer_create(CLOCK_MONOTONIC, &pHandle->signal, &pHandle->timerId)){ logError("timer_create fail");
+    #if (APP_OS == OS_LINUX) && APP_EPOLL
+        pHandle->timerFd = timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK);
+        if(pHandle->timerFd == -1){ logError("timerfd_create fail");
             return retFail;
         }
-        struct itimerspec timerSpec;
-        memset(&timerSpec, 0, sizeof(timerSpec));
-        timerSpec.it_value.tv_sec = periodMs / 1000;
-        timerSpec.it_value.tv_nsec = (periodMs % 1000) * 1000000;
-        timerSpec.it_interval.tv_sec = timerSpec.it_value.tv_sec;
-        timerSpec.it_interval.tv_nsec = timerSpec.it_value.tv_nsec;
-        if(timer_settime(pHandle->timerId, 0, &timerSpec, NULL) == -1){ logError("timer_settime fail");
-            timer_delete(pHandle->timerId);
+        pHandle->timerCb = expiredCallback;
+        pHandle->timerArg = pHandle;
+        struct itimerspec its;
+        its.it_value.tv_sec = periodMs / 1000;
+        its.it_value.tv_nsec = (periodMs % 1000) * 1000000;
+        its.it_interval.tv_sec = its.it_value.tv_sec;
+        its.it_interval.tv_nsec = its.it_value.tv_nsec;
+        if(timerfd_settime(pHandle->timerFd, 0, &its, NULL) == -1){ logError("timerfd_settime fail");
+            close(pHandle->timerFd);
             return retFail;
         }
     #endif
@@ -115,9 +107,12 @@ int osalTimerOpen(osalTimer* pHandle, osalTimerCb expiredCallback, int periodMs)
 int osalTimerClose(osalTimer* pHandle){
 #if APP_TIMER == SYSTEM_OSAL_TIMER_ENABLE
     checkParams(pHandle);
-    #if APP_OS == OS_LINUX
-        if(timer_delete(pHandle->timerId)){ logError("timer_delete fail");
-            return retFail;
+    #if (APP_OS == OS_LINUX) && APP_EPOLL
+        if (pHandle->timerFd >= 0) {
+            struct itimerspec its = {0};
+            timerfd_settime(pHandle->timerFd, 0, &its, NULL);
+            close(pHandle->timerFd);
+            pHandle->timerFd = -1;
         }
     #endif
 #endif
@@ -392,6 +387,77 @@ int osalSemaphoreGive(osalSemaphore* pHandle){
 #endif
     return retOk;
 }
+
+// Epoll
+int osalEpollOpen(osalEpoll* pHandle){
+#if APP_EPOLL == SYSTEM_OSAL_EPOLL_ENABLE
+    checkParams(pHandle);
+    pHandle->epollFd = epoll_create1(0);
+    if(pHandle->epollFd == -1){ logError("epoll_create1 fail");
+        return retFail;
+    }
+    pHandle->eventFd = eventfd(0, EFD_NONBLOCK);
+    if(pHandle->eventFd == -1){ logError("eventfd fail");
+        close(pHandle->epollFd);
+        return retFail;
+    }
+    osalEpollAddFd(pHandle, pHandle->eventFd, EPOLLIN);
+#endif
+    return retOk;
+}
+int osalEpollClose(osalEpoll* pHandle){
+#if APP_EPOLL == SYSTEM_OSAL_EPOLL_ENABLE
+    checkParams(pHandle);
+    close(pHandle->eventFd);
+    close(pHandle->epollFd);
+#endif
+    return retOk;
+}
+int osalEpollAddFd(osalEpoll* pHandle, int fd, uint32_t events){
+#if APP_EPOLL == SYSTEM_OSAL_EPOLL_ENABLE
+    checkParams(pHandle, events);
+    if(fd < 0) return retInvalidParam;
+    struct epoll_event epollEvent;
+    memset(&epollEvent, 0, sizeof(epollEvent));
+    epollEvent.events = events;
+    epollEvent.data.fd = fd;
+    return epoll_ctl(pHandle->epollFd, EPOLL_CTL_ADD, fd, &epollEvent) ? retFail : retOk;
+#else
+    return retOk;
+#endif
+}
+int osalEpollDeleteFd(osalEpoll* pHandle, int fd){
+#if APP_EPOLL == SYSTEM_OSAL_EPOLL_ENABLE
+    checkParams(pHandle);
+    if(fd < 0) return retInvalidParam;
+    return epoll_ctl(pHandle->epollFd, EPOLL_CTL_DEL, fd, NULL) ? retFail : retOk;
+#else
+    return retOk;
+#endif
+}
+int osalEpollWait(osalEpoll* pHandle, int* triggeredFd, int timeoutMs){
+#if APP_EPOLL == SYSTEM_OSAL_EPOLL_ENABLE
+    checkParams(pHandle, triggeredFd, timeoutMs);
+    struct epoll_event event;
+    int fd = epoll_wait(pHandle->epollFd, &event, 1, timeoutMs);
+    if(fd < 0){ logError("epoll_wait fail");
+        return retFail;
+    }else if(fd == 0){
+        return retTimeout;
+    }
+    *triggeredFd = event.data.fd;
+#endif
+    return retOk;
+}
+int osalEpollNotify(osalEpoll* pHandle){
+#if APP_EPOLL == SYSTEM_OSAL_EPOLL_ENABLE
+    checkParams(pHandle);
+    uint64_t val = 1;
+    return (write(pHandle->eventFd, &val, sizeof(val)) == sizeof(uint64_t)) ? retOk : retFail;
+#else
+    return retOk;
+#endif
+} 
 
 // Etc
 int osalIsInIsr(void){

@@ -14,6 +14,9 @@ typedef struct{
     objectState objState;
     osalMutex objMutex;
     osalSemaphore objSema;
+#if APP_OS == OS_LINUX
+    osalEpoll objEpoll;
+#endif
     ringBuffer eventQueue;
 } activeObject;
 
@@ -36,7 +39,7 @@ typedef struct{
 
 int asyncSubscribe(activeObject*, uint16_t, uint16_t);
 int asyncPush(asyncType, uint16_t, uintptr_t, uintptr_t, uintptr_t, uintptr_t);
-int asyncPop(activeObject*, asyncPacket*, uint8_t*);
+size_t asyncPop(activeObject*, asyncPacket*, uint8_t*);
 
 #ifdef __cplusplus
 }

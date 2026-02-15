@@ -108,17 +108,17 @@ int bufferPush(ringBuffer* pHandle, uint8_t* data, size_t dataSize){
 #if APP_BUFFER_STATISTICS
     pHandle->totalPushCount++;
     if(pHandle->usage > pHandle->maxUsage) pHandle->maxUsage = pHandle->usage;
-#endif
     logDebug("push %zu bytes (usage: %zu / %zu)", dataSize, pHandle->usage, pHandle->size);
+#endif
     _bufferUnlock(pHandle);
     return retOk;
 }
 size_t bufferPop(ringBuffer* pHandle, uint8_t* pBuf, size_t bufSize){
     checkParams(pHandle, pBuf, bufSize);
     _bufferLock(pHandle);
-    if(pHandle->usage == 0){ logDebug("pop 0 bytes (empty)");
+    if(pHandle->usage == 0){ //logDebug("pop 0 bytes (empty)");
         _bufferUnlock(pHandle);
-        return 0;
+        return retOk;
     }
     size_t readSize = (bufSize < pHandle->usage) ? bufSize : pHandle->usage;
     size_t spaceToEnd = pHandle->size - pHandle->tail;
@@ -130,8 +130,8 @@ size_t bufferPop(ringBuffer* pHandle, uint8_t* pBuf, size_t bufSize){
     pHandle->usage -= readSize;
 #if APP_BUFFER_STATISTICS
     pHandle->totalPopCount++;
-#endif
     logDebug("pop %zu bytes (usage: %zu / %zu)", readSize, pHandle->usage, pHandle->size);
+#endif
     _bufferUnlock(pHandle);
     return readSize;
 }

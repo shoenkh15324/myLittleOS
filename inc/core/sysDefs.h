@@ -18,9 +18,10 @@
 
 typedef enum{
     retOk = 0,
-    retFail,
-    retTimeout,
-    retInvalidParam,
+    retFail = -1,
+    retTimeout = -2,
+    retInvalidParam = -3,
+    retEmptyBuffer = -4,
 } returnCode;
 
 typedef enum{
