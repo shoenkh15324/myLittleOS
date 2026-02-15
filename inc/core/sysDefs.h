@@ -35,24 +35,3 @@ typedef enum{
     objSyncBegin = 0,
 } objectSync;
 
-#define checkParams(...) \
-    do { \
-        const uintptr_t _args[] = { (uintptr_t)(__VA_ARGS__) }; \
-        const int _num_args = sizeof(_args) / sizeof(_args[0]); \
-        for (int _i = 0; _i < _num_args; _i++) { \
-            if (_args[_i] == 0) { \
-                logError("[SYSTEM] Invaild Params"); \
-                return retInvalidParam; \
-            } \
-        } \
-    } while(0)
-#define checkParamsVoid(...) \
-    do { \
-        const uintptr_t _args[] = { (uintptr_t)(__VA_ARGS__) }; \
-        for (size_t _i = 0; _i < sizeof(_args)/sizeof(_args[0]); _i++) { \
-            if (_args[_i] == 0) { \
-                logError("[SYSTEM] Invaild Params"); \
-                return; \
-            } \
-        } \
-    } while(0)

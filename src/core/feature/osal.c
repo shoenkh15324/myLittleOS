@@ -30,7 +30,7 @@ static void _osalGetAbsTime(struct timespec* pTimeSpec, int timeoutMs) {
     }
 }
 void osalGetDate(char* pBuf, size_t bufSize){
-    checkParamsVoid(pBuf, bufSize);
+    if(!pBuf || !bufSize){ logError("Invaild Params"); return; }
 #if APP_OS == OS_LINUX
     struct timeval  time;
     gettimeofday(&time, NULL);
@@ -83,7 +83,7 @@ void osalSleepUs(int us){
 // Timer
 int osalTimerOpen(osalTimer* pHandle, osalTimerCb expiredCallback, int periodMs){
 #if APP_TIMER == SYSTEM_OSAL_TIMER_ENABLE
-    checkParams(pHandle, expiredCallback, periodMs);
+    if(!pHandle || !expiredCallback || !periodMs){ logError("Invaild Params"); return retInvalidParam; }
     #if (APP_OS == OS_LINUX) && APP_EPOLL
         pHandle->timerFd = timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK);
         if(pHandle->timerFd == -1){ logError("timerfd_create fail");
@@ -106,7 +106,7 @@ int osalTimerOpen(osalTimer* pHandle, osalTimerCb expiredCallback, int periodMs)
 }
 int osalTimerClose(osalTimer* pHandle){
 #if APP_TIMER == SYSTEM_OSAL_TIMER_ENABLE
-    checkParams(pHandle);
+    if(!pHandle){ logError("Invaild Params"); return retInvalidParam; }
     #if (APP_OS == OS_LINUX) && APP_EPOLL
         if (pHandle->timerFd >= 0) {
             struct itimerspec its = {0};
@@ -125,7 +125,7 @@ static alignas(APP_MEM_ALIGNMENT) uint8_t _memPool[APP_MEM_POOL_SIZE] = {0};
 static bool _memBlockUsed[APP_MEM_BLOCK_COUNT] = {0}; // 0 = free, 1 = used
 #endif
 int osalMalloc(void** pHandle, size_t size){
-    checkParams(pHandle, size);
+    if(!pHandle || !size){ logError("Invaild Params"); return retInvalidParam; }
 #if APP_OS == OS_LINUX
     #if APP_MEM == SYSTEM_OSAL_DYNAMIC_MEM
         *pHandle = malloc(size);
@@ -152,7 +152,7 @@ int osalMalloc(void** pHandle, size_t size){
     return retOk;
 }
 int osalFree(void* pHandle){
-    checkParams(pHandle);
+    if(!pHandle){ logError("Invaild Params"); return retInvalidParam; }
 #if APP_OS == OS_LINUX
     #if APP_MEM == SYSTEM_OSAL_DYNAMIC_MEM
         free(pHandle);
@@ -178,7 +178,7 @@ int osalFree(void* pHandle){
 // Thread
 int osalThreadOpen(osalThread* pHandle, const osalThreadAttribute* attr, oslThreadEntry threadEntryCb, void* userArg){
 #if APP_THREAD == SYSTEM_OSAL_THREAD_ENABLE
-    checkParams(pHandle, attr, threadEntryCb);
+    if(!pHandle || !attr || !threadEntryCb){ logError("Invaild Params"); return retInvalidParam; }
     #if APP_OS == OS_LINUX
         pthread_attr_t threadAttrLinux;
         if(pthread_attr_init(&threadAttrLinux)){ logError("pthread_attr_init fail");
@@ -202,7 +202,7 @@ int osalThreadOpen(osalThread* pHandle, const osalThreadAttribute* attr, oslThre
 }
 int osalThreadSetPriority(osalThread* pHandle, osalThreadPriority priority){
 #if APP_THREAD == SYSTEM_OSAL_THREAD_ENABLE
-    checkParams(pHandle);
+    if(!pHandle){ logError("Invaild Params"); return retInvalidParam; }
     #if APP_OS == OS_LINUX
         int policy = SCHED_OTHER;
         struct sched_param param;
@@ -222,7 +222,7 @@ int osalThreadSetPriority(osalThread* pHandle, osalThreadPriority priority){
 }
 int osalThreadJoin(osalThread* pHandle){
 #if APP_THREAD == SYSTEM_OSAL_THREAD_ENABLE
-    checkParams(pHandle);
+    if(!pHandle){ logError("Invaild Params"); return retInvalidParam; }
     #if APP_OS == OS_LINUX
         if(pHandle->isCreated){
             if(pthread_join(pHandle->thread, NULL)){ logError("pthread_join fail");
@@ -236,7 +236,7 @@ int osalThreadJoin(osalThread* pHandle){
 }
 int osalThreadClose(osalThread* pHandle){
 #if APP_THREAD == SYSTEM_OSAL_THREAD_ENABLE
-    checkParams(pHandle);
+    if(!pHandle){ logError("Invaild Params"); return retInvalidParam; }
     #if APP_OS == OS_LINUX
         if(pHandle->isCreated) pthread_detach(pHandle->thread);
         pHandle->thread = 0;
@@ -249,7 +249,7 @@ int osalThreadClose(osalThread* pHandle){
 // Mutex
 int osalMutexOpen(osalMutex* pHandle){
 #if APP_MUTEX == SYSTEM_OSAL_MUTEX_ENABLE
-    checkParams(pHandle);
+    if(!pHandle){ logError("Invaild Params"); return retInvalidParam; }
     #if APP_OS == OS_LINUX
         pthread_mutexattr_t attr;
         if(pthread_mutexattr_init(&attr)){ logError("pthread_mutexattr_init fail");
@@ -275,7 +275,7 @@ int osalMutexOpen(osalMutex* pHandle){
 }
 int osalMutexClose(osalMutex* pHandle){
 #if APP_MUTEX == SYSTEM_OSAL_MUTEX_ENABLE
-    checkParams(pHandle);
+    if(!pHandle){ logError("Invaild Params"); return retInvalidParam; }
     #if APP_OS == OS_LINUX
         if(pthread_mutex_destroy(&(pHandle->mutex))){ logError("pthread_mutex_destroy fail");
             return retFail;
@@ -286,7 +286,7 @@ int osalMutexClose(osalMutex* pHandle){
 }
 int osalMutexLock(osalMutex* pHandle, int timeoutMs){
 #if APP_MUTEX == SYSTEM_OSAL_MUTEX_ENABLE
-    checkParams(pHandle);
+    if(!pHandle){ logError("Invaild Params"); return retInvalidParam; }
     #if APP_OS == OS_LINUX
         int res = 0;
         if(timeoutMs < 0){
@@ -311,7 +311,7 @@ int osalMutexLock(osalMutex* pHandle, int timeoutMs){
 }
 int osalMutexUnlock(osalMutex* pHandle){
 #if APP_MUTEX == SYSTEM_OSAL_MUTEX_ENABLE
-    checkParams(pHandle);
+    if(!pHandle){ logError("Invaild Params"); return retInvalidParam; }
     #if APP_OS == OS_LINUX
         if(pthread_mutex_unlock(&(pHandle->mutex))){ logError("pthread_mutex_unlock fail");
             return retFail;
@@ -324,7 +324,7 @@ int osalMutexUnlock(osalMutex* pHandle){
 // Semaphore
 int osalSemaphoreOpen(osalSemaphore* pHandle, int count){
 #if APP_SEMAPHORE == SYSTEM_OSAL_SEMAPHORE_ENABLE
-    checkParams(pHandle, count);
+    if(!pHandle){ logError("Invaild Params"); return retInvalidParam; }
     unsigned int initCount = 0;
     #if APP_SEMAPHORE_TYPE == SYSTEM_OSAL_SEMAPHORE_TYPE_BINARY
         initCount = (count > 0) ? 1 : 0;
@@ -342,7 +342,7 @@ int osalSemaphoreOpen(osalSemaphore* pHandle, int count){
 }
 int osalSemaphoreClose(osalSemaphore* pHandle){
 #if APP_SEMAPHORE == SYSTEM_OSAL_SEMAPHORE_ENABLE
-    checkParams(pHandle);
+    if(!pHandle){ logError("Invaild Params"); return retInvalidParam; }
     #if APP_OS == OS_LINUX
         if(sem_destroy(&(pHandle->sema)) != 0){ logError("sem_destroy fail");
             return retFail;
@@ -353,7 +353,7 @@ int osalSemaphoreClose(osalSemaphore* pHandle){
 }
 int osalSemaphoreTake(osalSemaphore* pHandle, int timeoutMs){
 #if APP_SEMAPHORE == SYSTEM_OSAL_SEMAPHORE_ENABLE
-    checkParams(pHandle);
+    if(!pHandle){ logError("Invaild Params"); return retInvalidParam; }
     #if APP_OS == OS_LINUX
         int res = 0;
         if(timeoutMs < 0){
@@ -378,7 +378,7 @@ int osalSemaphoreTake(osalSemaphore* pHandle, int timeoutMs){
 }
 int osalSemaphoreGive(osalSemaphore* pHandle){
 #if APP_SEMAPHORE == SYSTEM_OSAL_SEMAPHORE_ENABLE
-    checkParams(pHandle);
+    if(!pHandle){ logError("Invaild Params"); return retInvalidParam; }
     #if APP_OS == OS_LINUX
         if(sem_post(&(pHandle->sema)) != 0){ logError("sem_post fail");
             return retFail;
@@ -391,7 +391,7 @@ int osalSemaphoreGive(osalSemaphore* pHandle){
 // Epoll
 int osalEpollOpen(osalEpoll* pHandle){
 #if APP_EPOLL == SYSTEM_OSAL_EPOLL_ENABLE
-    checkParams(pHandle);
+    if(!pHandle){ logError("Invaild Params"); return retInvalidParam; }
     pHandle->epollFd = epoll_create1(0);
     if(pHandle->epollFd == -1){ logError("epoll_create1 fail");
         return retFail;
@@ -407,7 +407,7 @@ int osalEpollOpen(osalEpoll* pHandle){
 }
 int osalEpollClose(osalEpoll* pHandle){
 #if APP_EPOLL == SYSTEM_OSAL_EPOLL_ENABLE
-    checkParams(pHandle);
+    if(!pHandle){ logError("Invaild Params"); return retInvalidParam; }
     close(pHandle->eventFd);
     close(pHandle->epollFd);
 #endif
@@ -415,7 +415,7 @@ int osalEpollClose(osalEpoll* pHandle){
 }
 int osalEpollAddFd(osalEpoll* pHandle, int fd, uint32_t events){
 #if APP_EPOLL == SYSTEM_OSAL_EPOLL_ENABLE
-    checkParams(pHandle, events);
+    if(!pHandle){ logError("Invaild Params"); return retInvalidParam; }
     if(fd < 0) return retInvalidParam;
     struct epoll_event epollEvent;
     memset(&epollEvent, 0, sizeof(epollEvent));
@@ -428,7 +428,7 @@ int osalEpollAddFd(osalEpoll* pHandle, int fd, uint32_t events){
 }
 int osalEpollDeleteFd(osalEpoll* pHandle, int fd){
 #if APP_EPOLL == SYSTEM_OSAL_EPOLL_ENABLE
-    checkParams(pHandle);
+    if(!pHandle){ logError("Invaild Params"); return retInvalidParam; }
     if(fd < 0) return retInvalidParam;
     return epoll_ctl(pHandle->epollFd, EPOLL_CTL_DEL, fd, NULL) ? retFail : retOk;
 #else
@@ -437,7 +437,7 @@ int osalEpollDeleteFd(osalEpoll* pHandle, int fd){
 }
 int osalEpollWait(osalEpoll* pHandle, int* triggeredFd, int timeoutMs){
 #if APP_EPOLL == SYSTEM_OSAL_EPOLL_ENABLE
-    checkParams(pHandle, triggeredFd, timeoutMs);
+    if(!pHandle || !triggeredFd){ logError("Invaild Params"); return retInvalidParam; }
     struct epoll_event event;
     int fd = epoll_wait(pHandle->epollFd, &event, 1, timeoutMs);
     if(fd < 0){ logError("epoll_wait fail");
@@ -451,7 +451,7 @@ int osalEpollWait(osalEpoll* pHandle, int* triggeredFd, int timeoutMs){
 }
 int osalEpollNotify(osalEpoll* pHandle){
 #if APP_EPOLL == SYSTEM_OSAL_EPOLL_ENABLE
-    checkParams(pHandle);
+    if(!pHandle){ logError("Invaild Params"); return retInvalidParam; }
     uint64_t val = 1;
     return (write(pHandle->eventFd, &val, sizeof(val)) == sizeof(uint64_t)) ? retOk : retFail;
 #else

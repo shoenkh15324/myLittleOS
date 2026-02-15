@@ -35,7 +35,7 @@ static void _actorThreadHandler(void* arg){
     }
 }
 int activeOpen(activeObject* pHandle){
-    checkParams(pHandle);
+    if(!pHandle){ logError("Invaild Params"); return retInvalidParam; }
     int result = retOk;
     osalMutexOpen(&pHandle->objMutex);
     osalSemaphoreOpen(&pHandle->objSema, -1);
@@ -75,7 +75,7 @@ appOpenExit:
     return retOk;
 }
 int activeClose(activeObject* pHandle){
-    checkParams(pHandle);
+    if(!pHandle){ logError("Invaild Params"); return retInvalidParam; }
     int result = retOk;
     if(pHandle->objState >= objStateOpening){
         osalMutexLock(&pHandle->objMutex, -1);

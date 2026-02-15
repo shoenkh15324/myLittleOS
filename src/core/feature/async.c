@@ -21,7 +21,7 @@ static activeObject* _asyncLookupTarget(uint16_t eventId){
     return NULL;
 }
 int asyncSubscribe(activeObject* pActObj, uint16_t startId, uint16_t endId){
-    checkParams(pActObj);
+    if(!pActObj){ logError("Invaild Params"); return retInvalidParam; }
     if(_asyncSubCnt >= APP_THREAD_MAX_COUNT){ logError("_asyncSubCnt >= APP_THREAD_MAX_COUNT");
         return retFail;
     }
@@ -83,7 +83,7 @@ Exit:
     return result;
 }
 size_t asyncPop(activeObject* pTarget, asyncPacket* pOutPacket, uint8_t* payloadBuf){
-    checkParams(pTarget, pOutPacket);
+    if(!pTarget || !pOutPacket || !payloadBuf){ logError("Invaild Params"); return retInvalidParam; }
     osalMutexLock(&pTarget->objMutex, -1);
     size_t popResult = bufferPop(&pTarget->eventQueue, pOutPacket, sizeof(asyncPacket));
     if(popResult < 0){ logError("bufferPop fail");

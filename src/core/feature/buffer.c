@@ -16,7 +16,7 @@ extern "C" {
 
 static inline bool _bufferLock(ringBuffer* pHandle){
 #if APP_BUFFER_LOCK == SYSTEM_BUFFER_LOCK_ENABLE
-    checkParamsVoid(pHandle);
+    if(!pHandle){ logError("Invaild Params"); return retInvalidParam; }
     if(pHandle->lock){ logError("Already locked");
         return retFail;
     }
@@ -26,12 +26,12 @@ static inline bool _bufferLock(ringBuffer* pHandle){
 }
 static inline void _bufferUnlock(ringBuffer* pHandle){
 #if APP_BUFFER_LOCK == SYSTEM_BUFFER_LOCK_ENABLE
-    checkParamsVoid(pHandle);
+    if(!pHandle){ logError("Invaild Params"); return retInvalidParam; }
     pHandle->lock = false;
 #endif
 }
 int bufferOpen(ringBuffer* pHandle, size_t size){
-    checkParams(pHandle, size);
+    if(!pHandle || !size){ logError("Invaild Params"); return retInvalidParam; }
     if(bufferReset(pHandle)){ logError("bufferReset fail");
         return retFail;
     }
@@ -42,7 +42,7 @@ int bufferOpen(ringBuffer* pHandle, size_t size){
     return retOk;
 }
 int bufferClose(ringBuffer* pHandle){
-    checkParams(pHandle);
+    if(!pHandle){ logError("Invaild Params"); return retInvalidParam; }
     if(pHandle->pBuf){
         if(osalFree(pHandle->pBuf)){ logError("osalFree fail");
             return retFail;
@@ -53,7 +53,7 @@ int bufferClose(ringBuffer* pHandle){
     return retOk;
 }
 int bufferReset(ringBuffer* pHandle){
-    checkParams(pHandle);
+    if(!pHandle){ logError("Invaild Params"); return retInvalidParam; }
     pHandle->pBuf = NULL;
     pHandle->size = 0;
     pHandle->head = 0;
@@ -69,14 +69,15 @@ int bufferReset(ringBuffer* pHandle){
 }
 int bufferCanPush(ringBuffer* pHandle, size_t dataSize){
 #if APP_BUFFER_PUSH_OVERWRITE
-    checkParams(pHandle, dataSize);
+    if(!pHandle){ logError("Invaild Params"); return retInvalidParam; }
     return ((pHandle->size - pHandle->usage) > dataSize) ? retOk : retFail;
 #else
     return retOk;
 #endif
 }
 int bufferPush(ringBuffer* pHandle, uint8_t* data, size_t dataSize){
-    checkParams(pHandle, pHandle->pBuf, data, dataSize);
+    if(!pHandle || !data){ logError("Invaild Params"); return retInvalidParam; }
+    if(pHandle->pBuf == NULL){ logError("[SYSTEM] Invalid Params"); return retInvalidParam; }
     _bufferLock(pHandle);
     if(dataSize > pHandle->size){ logError("push fail: size(%zu) > cap(%zu)", dataSize, pHandle->size);
         _bufferUnlock(pHandle);
@@ -114,7 +115,7 @@ int bufferPush(ringBuffer* pHandle, uint8_t* data, size_t dataSize){
     return retOk;
 }
 size_t bufferPop(ringBuffer* pHandle, uint8_t* pBuf, size_t bufSize){
-    checkParams(pHandle, pBuf, bufSize);
+    if(!pHandle || !pBuf){ logError("Invaild Params"); return retInvalidParam; }
     _bufferLock(pHandle);
     if(pHandle->usage == 0){ //logDebug("pop 0 bytes (empty)");
         _bufferUnlock(pHandle);
@@ -137,7 +138,7 @@ size_t bufferPop(ringBuffer* pHandle, uint8_t* pBuf, size_t bufSize){
 }
 #if APP_BUFFER_PEAK
 size_t bufferPeek(ringBuffer* pHandle, uint8_t* pBuf, size_t bufSize){
-    checkParams(pHandle, pBuf, bufSize);
+    if(!pHandle || !pBuf){ logError("Invaild Params"); return retInvalidParam; }
     _bufferLock(pHandle);
     if(pHandle->usage == 0){ logDebug("peek 0 bytes (empty)");
         _bufferUnlock(pHandle);
@@ -154,32 +155,31 @@ size_t bufferPeek(ringBuffer* pHandle, uint8_t* pBuf, size_t bufSize){
     return readSize;
 }
 #endif
-#if APP_BUFFER_STATISTICS
+
 size_t inline bufferGetTotalPushCount(ringBuffer* pHandle){
-    checkParams(pHandle);
+    if(!pHandle){ logError("Invaild Params"); return retInvalidParam; }
     return pHandle->totalPushCount;
 }
 size_t inline bufferGetTotalPopped(ringBuffer* pHandle){
-    checkParams(pHandle);
+    if(!pHandle){ logError("Invaild Params"); return retInvalidParam; }
     return pHandle->totalPopCount;
 }
 size_t inline bufferGetCurrentUsage(ringBuffer* pHandle){
-    checkParams(pHandle);
+    if(!pHandle){ logError("Invaild Params"); return retInvalidParam; }
     return pHandle->usage;
 }
 size_t inline bufferGetMaxUsage(ringBuffer* pHandle){
-    checkParams(pHandle);
+    if(!pHandle){ logError("Invaild Params"); return retInvalidParam; }
     return pHandle->maxUsage;
 }
 size_t inline bufferGetDiscardCount(ringBuffer* pHandle){
-    checkParams(pHandle);
+    if(!pHandle){ logError("Invaild Params"); return retInvalidParam; }
     return pHandle->discardCount;
 }
 size_t inline bufferGetPushFailCount(ringBuffer* pHandle){
-    checkParams(pHandle);
+    if(!pHandle){ logError("Invaild Params"); return retInvalidParam; }
     return pHandle->pushFailCount;
 }
-#endif
 
 #ifdef __cplusplus
 }

@@ -6,7 +6,6 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
 endif()
 
 set(TARGET_NAME mario_daemon)
-
 find_package(Threads REQUIRED)
 find_library(RT_LIBRARY rt)
 
@@ -28,18 +27,18 @@ add_executable(${TARGET_NAME}
     src/app/sample/app.c
     src/app/sample/appBridge.c
 )
-
-target_include_directories(${TARGET_NAME}
-    PRIVATE
+target_include_directories(${TARGET_NAME} PRIVATE
         ${CMAKE_SOURCE_DIR}/inc
 )
-
 target_compile_definitions(${TARGET_NAME} PUBLIC
     MY_LITTLE_OS=1
     APP_SAMPLE=1
 )
-
 target_link_libraries(${TARGET_NAME} PRIVATE 
     Threads::Threads 
     ${RT_LIBRARY}
 )
+# Test Folder
+enable_testing()
+add_subdirectory(tests/unit/core)
+add_subdirectory(tests/integration)
