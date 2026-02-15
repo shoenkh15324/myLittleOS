@@ -91,7 +91,7 @@ size_t asyncPop(activeObject* pTarget, asyncPacket* pOutPacket, uint8_t* payload
         return retFail;
     }
     if(pOutPacket->type == asyncTypeAsyncPayload){
-        if(bufferPop(&pTarget->eventQueue, payloadBuf, pOutPacket->payloadSize)){ logError("payload bufferPop fail");
+        if(bufferPop(&pTarget->eventQueue, payloadBuf, pOutPacket->payloadSize) < 0){ logError("payload bufferPop fail");
             osalMutexUnlock(&pTarget->objMutex);
             return retFail;
         }
