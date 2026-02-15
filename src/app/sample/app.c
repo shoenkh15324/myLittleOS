@@ -35,11 +35,11 @@ static appTest _appTest = {
 static void _appMainTimerHandler(activeObject* actor){ //logDebug("_appMainTimerHandler");
     if(actor->isMainThread){
         if(asyncPush(asyncTypeAsync, appMainEventTimer, NULL, NULL, NULL, NULL)){ logError("asyncPush fail"); }
-        if(actor->appTimerCount > 2000){
+        actor->appTimerCount += APP_TIMER_INTERVAL;
+        if(actor->appTimerCount >= 2000){
             if(asyncPush(asyncTypeAsync, appTestEventTimer, NULL, NULL, NULL, NULL)){ logError("asyncPush fail"); }
             actor->appTimerCount = 0;
         }
-        actor->appTimerCount += APP_TIMER_INTERVAL;
     }
 }
 static void _appMainEventHandler(activeObject* actor, asyncPacket* pAsync, uint8_t* pPayload){
@@ -48,7 +48,6 @@ static void _appMainEventHandler(activeObject* actor, asyncPacket* pAsync, uint8
         case appMainEventTimer: logDebug("appMainEventTimer");
             break;
     }
-appEventHandlerExit:
     osalMutexUnlock(&actor->objMutex);
 }
 static void _appTestEventHandler(activeObject* actor, asyncPacket* pAsync, uint8_t* pPayload){
@@ -57,7 +56,6 @@ static void _appTestEventHandler(activeObject* actor, asyncPacket* pAsync, uint8
         case appTestEventTimer: logDebug("appTestEventTimer");
             break;
     }
-appEventHandlerExit:
     osalMutexUnlock(&actor->objMutex);
 }
 int appClose(void){

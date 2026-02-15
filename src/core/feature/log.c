@@ -13,9 +13,12 @@ extern "C" {
 #include <string.h>
 #include <stdarg.h>
 #include <stdint.h>
+#include "core/feature/osal.h"
 
 static char buffer[APP_LOG_BUFFER_SIZE];
 static char message[APP_LOG_BUFFER_SIZE - 128];
+
+static osalMutex _logMutex;
 
 #if APP_LOG_BACKEND == SYSTEM_LOG_BACKEND_PRINTF
     #if APP_LOG_COLOR
@@ -70,6 +73,7 @@ static const char* _logLevelToString(uint8_t level){
 
 void _logInternalArgs(int level,  const char* func, int line, const char* fmt, va_list args){
 #if APP_LOG_ENABLE
+    osalMutexLock(&_logMutex, -1);
     vsnprintf(message, sizeof(message), fmt, args);
     #if APP_LOG_TIMESTAMP
         char timestamp[16] = {0};
@@ -97,6 +101,7 @@ void _logInternalArgs(int level,  const char* func, int line, const char* fmt, v
     #else
         // TODO: log async
     #endif
+    osalMutexUnlock(&_logMutex);
 #else
     (void)level; (void)func; (void)line; (void)fmt; (void)args;
 #endif
@@ -110,6 +115,19 @@ void _logInternal(int level, const char* func, int line, const char* fmt, ...){
 #else
     (void)level; (void)func; (void)line; (void)fmt;
 #endif
+}
+
+int logOpen(void){
+    if(osalMutexOpen(&_logMutex)){
+        return retFail;
+    }
+    return retOk;
+}
+int logClose(void){
+    if(osalMutexClose(&_logMutex)){
+        return retFail;
+    }
+    return retOk;
 }
 
 #endif

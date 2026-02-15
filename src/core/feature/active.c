@@ -64,12 +64,12 @@ int activeOpen(activeObject* pHandle){
         }
 #endif
     }
+    pHandle->objState = objStateOpened;
     if(osalThreadOpen(&pHandle->appThread, &pHandle->appThreadAttr, _actorThreadHandler, pHandle)){ logError("osalThreadOpen fail");
         result = retFail; goto appOpenExit;
     }
     if(pHandle->appOnOpenHandler) pHandle->appOnOpenHandler(pHandle);
     //
-    pHandle->objState = objStateOpened;
 appOpenExit:
     osalMutexUnlock(&pHandle->objMutex);
     return retOk;

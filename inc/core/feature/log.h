@@ -38,6 +38,9 @@ extern "C" {
     #define logDebug(...) ((void)0)
 #endif
 
+int logOpen(void);
+int logClose(void);
+
 #ifdef __cplusplus
 }
 #endif

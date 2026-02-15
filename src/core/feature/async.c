@@ -53,7 +53,7 @@ int asyncPush(asyncType type, uint16_t eventId, uintptr_t arg1, uintptr_t arg2, 
             if(osalIsInIsr()){ logError("ISR Thread");
                 result = retFail; goto Exit;
             }
-            asyncPacket async = {type, eventId, 0, 0, 0, 0, arg2};
+            asyncPacket async = {type, eventId, 0, 0, arg3, arg4, arg2};
             if(bufferCanPush(&pTarget->eventQueue, (sizeof(async) + arg2))){ logError("bufferCanPush fail");
                 result = retFail; goto Exit;
             }

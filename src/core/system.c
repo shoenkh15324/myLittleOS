@@ -10,7 +10,8 @@ int systemClose(void){
     return 0;
 }
 int systemOpen(void){
-    logInfo("%s Open / v%d.%d.%d / Author: %s", SYSTEM_NAME, SYSTEM_VERSION_MAJOR, SYSTEM_VERSION_MINOR, SYSTEM_VERSION_PATCH, SYSTEM_AUTHOR);
+    printf("%s %s / %s Open / v%d.%d.%d / Author: %s\n", __DATE__, __TIME__, SYSTEM_NAME, SYSTEM_VERSION_MAJOR, SYSTEM_VERSION_MINOR, SYSTEM_VERSION_PATCH, SYSTEM_AUTHOR);
+    logOpen();
     driverCommonOpen();
     serviceCommonOpen();
     appCommonOpen();
