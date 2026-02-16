@@ -4,9 +4,9 @@
  ******************************************************************************/
 #include "app/appCommon.h"
 
-static void _appMainTimerHandler(activeObject* actor);
-static void _appMainEventHandler(activeObject* actor, asyncPacket* pAsync, uint8_t* pPayload);
-static void _appTestEventHandler(activeObject* actor, asyncPacket* pAsync, uint8_t* pPayload);
+static void _appMainTimerHandler(void*);
+static void _appMainEventHandler(void*, void*, void*);
+static void _appTestEventHandler(void*, void*, void*);
 
 static appMain _appMain = {
     .actor.isMainThread = true,
@@ -32,7 +32,8 @@ static appTest _appTest = {
     .actor.appEventIdxEnd = appTestEventEnd,
     .actor.payloadBufferSize = APP_TEST_THREAD_PAYLOAD_BUFFER_SIZE,
 };
-static void _appMainTimerHandler(activeObject* actor){ //logDebug("_appMainTimerHandler");
+static void _appMainTimerHandler(void* arg){ //logDebug("_appMainTimerHandler");
+    activeObject* actor = (activeObject*)arg;
     if(actor->isMainThread){
         if(asyncPush(asyncTypeAsync, appMainEventTimer, NULL, NULL, NULL, NULL)){ logError("asyncPush fail"); }
         actor->appTimerCount += APP_TIMER_INTERVAL;
@@ -42,7 +43,10 @@ static void _appMainTimerHandler(activeObject* actor){ //logDebug("_appMainTimer
         }
     }
 }
-static void _appMainEventHandler(activeObject* actor, asyncPacket* pAsync, uint8_t* pPayload){
+static void _appMainEventHandler(void* arg1, void* arg2, void* arg3){
+    activeObject* actor = (activeObject*)arg1;
+    asyncPacket* pAsync = (asyncPacket*)arg2;
+    uint8_t* pPayload = (uint8_t*)arg3;
     osalMutexLock(&actor->objMutex, -1);
     switch(pAsync->eventId){
         case appMainEventTimer: logDebug("appMainEventTimer");
@@ -50,7 +54,10 @@ static void _appMainEventHandler(activeObject* actor, asyncPacket* pAsync, uint8
     }
     osalMutexUnlock(&actor->objMutex);
 }
-static void _appTestEventHandler(activeObject* actor, asyncPacket* pAsync, uint8_t* pPayload){
+static void _appTestEventHandler(void* arg1, void* arg2, void* arg3){
+    activeObject* actor = (activeObject*)arg1;
+    asyncPacket* pAsync = (asyncPacket*)arg2;
+    uint8_t* pPayload = (uint8_t*)arg3;
     osalMutexLock(&actor->objMutex, -1);
     switch(pAsync->eventId){
         case appTestEventTimer: logDebug("appTestEventTimer");

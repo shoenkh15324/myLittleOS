@@ -9,7 +9,7 @@
 #include "core/feature/buffer.h"
 #include "core/feature/osal.h"
 
-typedef struct activeObject {
+typedef struct {
     objectState objState;
     // Synchronization
     osalMutex objMutex;
@@ -23,18 +23,18 @@ typedef struct activeObject {
     // Thread
     osalThread appThread;
     osalThreadAttribute appThreadAttr;
-    void (*appThreadHandler)(struct activeObject* actor, asyncPacket* async, uint8_t* payload);
+    void (*appThreadHandler)(void*, void*, void*);
     // Timer
     osalTimer appTimer;
-    void (*appTimerHandler)(struct activeObject* actor);
+    void (*appTimerHandler)(void*);
     uint64_t appTimerCount;
     // Etc
     bool isMainThread;
     uint8_t *pPayloadBuffer;
     uint16_t appEventIdxStart, appEventIdxEnd;
     size_t payloadBufferSize;
-    void (*appOnOpenHandler)(struct activeObject* actor);
-} activeObject ;
+    void (*appOnOpenHandler)(void*);
+} activeObject;
 
 int activeOpen(activeObject*);
 int activeClose(activeObject*);

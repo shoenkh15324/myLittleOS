@@ -7,12 +7,13 @@ extern "C" {
 #endif
 
 #include "core/feature/async.h"
+#include "core/feature/active.h"
 #include "core/feature/log.h"
 
 static asyncSubscriber _asyncSubscriber[APP_THREAD_MAX_COUNT];
 static int _asyncSubCnt = 0;
 
-static activeObject* _asyncLookupTarget(uint16_t eventId){
+static void* _asyncLookupTarget(uint16_t eventId){
     for(int i = 0; i < _asyncSubCnt; i++){
         if((eventId >= _asyncSubscriber[i].startId) && (eventId <= _asyncSubscriber[i].endId)){
             return _asyncSubscriber[i].pActObj;
@@ -20,7 +21,7 @@ static activeObject* _asyncLookupTarget(uint16_t eventId){
     }
     return NULL;
 }
-int asyncSubscribe(activeObject* pActObj, uint16_t startId, uint16_t endId){
+int asyncSubscribe(void* pActObj, uint16_t startId, uint16_t endId){
     if(!pActObj){ logError("Invaild Params"); return retInvalidParam; }
     if(_asyncSubCnt >= APP_THREAD_MAX_COUNT){ logError("_asyncSubCnt >= APP_THREAD_MAX_COUNT");
         return retFail;
@@ -32,7 +33,7 @@ int asyncSubscribe(activeObject* pActObj, uint16_t startId, uint16_t endId){
     return retOk;
 }
 int asyncPush(asyncType type, uint16_t eventId, uintptr_t arg1, uintptr_t arg2, uintptr_t arg3, uintptr_t arg4){
-    activeObject* pTarget = _asyncLookupTarget(eventId);
+    activeObject* pTarget = (activeObject*)_asyncLookupTarget(eventId);
     if(!pTarget){ logError("Cannot find active object"); return retFail; }
     if(pTarget->objState < objStateOpened){ logError("objState(%d) < objStateOpened", pTarget->objState); }
     int result = retOk;
@@ -82,8 +83,9 @@ Exit:
     } 
     return result;
 }
-size_t asyncPop(activeObject* pTarget, asyncPacket* pOutPacket, uint8_t* payloadBuf){
-    if(!pTarget || !pOutPacket || !payloadBuf){ logError("Invaild Params"); return retInvalidParam; }
+size_t asyncPop(void* pActObj, asyncPacket* pOutPacket, uint8_t* payloadBuf){
+    if(!pActObj || !pOutPacket || !payloadBuf){ logError("Invaild Params"); return retInvalidParam; }
+    activeObject* pTarget = (activeObject*)pActObj;
     osalMutexLock(&pTarget->objMutex, -1);
     size_t popResult = bufferPop(&pTarget->eventQueue, pOutPacket, sizeof(asyncPacket));
     if(popResult < 0){ logError("bufferPop fail");

@@ -4,6 +4,7 @@
  *  Created: 2026-02-14
  ******************************************************************************/
 #include "core/system.h"
+#include "core/feature/active.h"
 
 typedef struct{
     activeObject actor;
