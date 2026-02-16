@@ -22,7 +22,7 @@
 #define APP_SDK SDK_POSIX
 #define APP_BOARD BOARD_NONE
 #if APP_BOARD
-    //
+    #define APP_DRIVER_XXX 0
 #endif
 
 /* [LOG] */
