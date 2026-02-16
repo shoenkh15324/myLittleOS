@@ -6,5 +6,9 @@
 #include "driver/driverCommon.h"
 #include "serviceDefs.h"
 
+#if APP_SERVICE_XXX == SERVICE_SAMPLE
+    #include "service/sample/serviceSample.h"
+#endif
+
 int serviceCommonClose(void);
 int serviceCommonOpen(void);

@@ -25,6 +25,9 @@
     #define APP_DRIVER_XXX 0
 #endif
 
+/* [SERVICE] */
+#define APP_SERVICE_XXX 0
+
 /* [LOG] */
 #define APP_LOG_ENABLE SYSTEM_LOG_ENABLE
 #if APP_LOG_ENABLE
