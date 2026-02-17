@@ -5,10 +5,6 @@
  ******************************************************************************/
 #include "core/feature/osal.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 enum{
     serviceSampleSyncXXX = objSyncBegin,
 };
@@ -24,7 +20,3 @@ typedef struct{
 int serviceSampleOpen(void);
 int serviceSampleClose(void);
 int serviceSampleSync(uint16_t, uintptr_t, uintptr_t, uintptr_t, uintptr_t);
-
-#ifdef __cplusplus
-}
-#endif

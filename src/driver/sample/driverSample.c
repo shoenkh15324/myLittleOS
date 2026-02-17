@@ -4,10 +4,6 @@
  ******************************************************************************/
 #include "driver/driverCommon.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #if APP_DRIVER_XXX == DRIVER_SAMPLE
 
 static driverSample _driverSample = {
@@ -47,9 +43,5 @@ int driverSampleSync(uint16_t sync, uintptr_t arg1, uintptr_t arg2, uintptr_t ar
 syncExit:
     osalMutexUnlock(&_driverSample.objMutex);
     return result;
-}
-#endif
-
-#ifdef __cplusplus
 }
 #endif

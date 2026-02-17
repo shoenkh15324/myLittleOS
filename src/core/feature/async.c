@@ -4,10 +4,6 @@
  ******************************************************************************/
 #include "appCfgSelector.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include "core/feature/async.h"
 #include "core/feature/active.h"
 #include "core/feature/log.h"
@@ -105,7 +101,3 @@ size_t asyncPop(void* pActObj, asyncPacket* pOutPacket, uint8_t* payloadBuf){
     osalMutexUnlock(&pTarget->objMutex);
     return popResult;
 }
-
-#ifdef __cplusplus
-}
-#endif

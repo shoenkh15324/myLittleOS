@@ -2,10 +2,6 @@
  *  Author : Minkyu Kim
  *  Created: 2026-02-13
  ******************************************************************************/
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include "appCfgSelector.h"
 #include "core/feature/osal.h"
 #include <time.h>
@@ -612,8 +608,3 @@ int osalIsInIsr(void){
     return 0; // User-space Linux has no direct ISR access.
 #endif
 }
-
-#ifdef __cplusplus
-}
-#endif
-

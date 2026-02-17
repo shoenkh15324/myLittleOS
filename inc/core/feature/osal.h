@@ -3,10 +3,6 @@
  *  Author : Minkyu Kim
  *  Created: 2026-02-13
  ******************************************************************************/
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include "core/systemDefs.h"
 #if APP_OS == OS_LINUX
     #include <pthread.h>
@@ -120,7 +116,3 @@ int osalEpollWait(osalEpoll*, int*, int);
 int osalEpollNotify(osalEpoll*); 
 // Etc
 int osalIsInIsr(void);
-
-#ifdef __cplusplus
-}
-#endif

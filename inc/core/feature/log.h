@@ -3,10 +3,6 @@
  *  Author : Minkyu Kim
  *  Created: 2026-02-10
  ******************************************************************************/
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include "core/systemDefs.h"
 
 #if APP_LOG_ENABLE
@@ -41,7 +37,3 @@ extern "C" {
 
 int logOpen(void);
 int logClose(void);
-
-#ifdef __cplusplus
-}
-#endif

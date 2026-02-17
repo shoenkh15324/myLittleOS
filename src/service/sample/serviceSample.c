@@ -4,10 +4,6 @@
  ******************************************************************************/
 #include "service/serviceCommon.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #if APP_DRIVER_XXX == DRIVER_SAMPLE
 
 static serviceSample _serviceSample = {
@@ -47,9 +43,5 @@ int serviceSampleSync(uint16_t sync, uintptr_t arg1, uintptr_t arg2, uintptr_t a
 syncExit:
     osalMutexUnlock(&_serviceSample.objMutex);
     return result;
-}
-#endif
-
-#ifdef __cplusplus
 }
 #endif

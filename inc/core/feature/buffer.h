@@ -3,10 +3,6 @@
  *  Author : Minkyu Kim
  *  Created: 2026-02-12
  ******************************************************************************/
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include "core/systemDefs.h"
 
 typedef struct{
@@ -30,6 +26,3 @@ size_t bufferGetMaxUsage(ringBuffer*);
 size_t bufferGetDiscardCount(ringBuffer*);
 size_t bufferGetPushFailCount(ringBuffer*);
 
-#ifdef __cplusplus
-}
-#endif

@@ -3,9 +3,6 @@
  *  Author : Minkyu Kim
  *  Created: 2026-02-15
  ******************************************************************************/
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 #include "core/systemDefs.h"
 #include "core/feature/async.h"
@@ -41,7 +38,3 @@ typedef struct {
 
 int activeOpen(activeObject*);
 int activeClose(activeObject*);
-
-#ifdef __cplusplus
-}
-#endif

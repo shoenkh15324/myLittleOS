@@ -4,10 +4,6 @@
  ******************************************************************************/
 #include "appCfgSelector.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include "core/feature/log.h"
 #if APP_LOG_ENABLE
 #include <stdio.h>
@@ -131,8 +127,4 @@ int logClose(void){
     return retOk;
 }
 
-#endif
-
-#ifdef __cplusplus
-}
 #endif

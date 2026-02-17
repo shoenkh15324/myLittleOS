@@ -3,9 +3,6 @@
  *  Author : Minkyu Kim
  *  Created: 2026-02-13
  ******************************************************************************/
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 #include "core/systemDefs.h"
 
@@ -31,7 +28,3 @@ typedef struct{
 int asyncSubscribe(void*, uint16_t, uint16_t);
 int asyncPush(asyncType, uint16_t, uintptr_t, uintptr_t, uintptr_t, uintptr_t);
 size_t asyncPop(void*, asyncPacket*, uint8_t*);
-
-#ifdef __cplusplus
-}
-#endif

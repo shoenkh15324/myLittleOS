@@ -4,10 +4,6 @@
  ******************************************************************************/
 #include "appCfgSelector.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include "core/feature/buffer.h"
 #include <stdlib.h>
 #if APP_OS == OS_LINUX
@@ -182,7 +178,3 @@ size_t inline bufferGetPushFailCount(ringBuffer* pHandle){
     if(!pHandle){ logError("Invaild Params"); return retInvalidParam; }
     return pHandle->pushFailCount;
 }
-
-#ifdef __cplusplus
-}
-#endif
