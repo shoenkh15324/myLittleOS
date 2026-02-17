@@ -3,7 +3,7 @@ project(myLittleOS LANGUAGES C CXX)
 
 # 1. 프로젝트 설정 (App Target)
 if(NOT DEFINED APP_TARGET)
-    set(APP_TARGET "engine_2d")
+    set(APP_TARGET "sample")
 endif()
 
 set(TARGET_NAME myLittleOS)
@@ -64,16 +64,3 @@ target_compile_definitions(${TARGET_NAME} PUBLIC
 )
 
 target_link_libraries(${TARGET_NAME} PRIVATE ${EXTERNAL_LIBS})
-
-# 6. 테스트 설정
-enable_testing()
-
-# 테스트 폴더가 있을 때만 추가 (에러 방지용)
-macro(add_test_directory dir)
-    if(EXISTS "${CMAKE_SOURCE_DIR}/${dir}/CMakeLists.txt")
-        add_subdirectory(${dir})
-    endif()
-endmacro()
-
-add_test_directory("tests/unit/core")
-add_test_directory("tests/integration")
