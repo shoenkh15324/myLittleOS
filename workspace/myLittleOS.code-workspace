@@ -1,0 +1,41 @@
+{
+    "folders": [
+        {
+            "name": "My Little OS",
+            "path": "../../myLittleOS",
+        }
+    ],
+    "settings": {
+        "files.exclude": {
+            "**/.git": true,
+            "**/build": true
+        },
+        "search.exclude": {
+            "**/.git": true,
+            "**/build": true
+        },
+        "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
+        "C_Cpp.default.defines": [
+            "DIRAC_OS=1",
+            "APP_SAMPLE=1",
+            "_GNU_SOURCE=1",
+        ],
+        "cmake.buildDirectory": "${workspaceFolder}/build",
+    },
+    "tasks": {
+        "version": "2.0.0",
+        "tasks": [
+            {
+                "label": "Build",
+                "command": "cmake --build build",
+                "type": "shell",
+                "presentation": {
+                    "echo": true,
+                    "reveal": "always",
+                    "panel": "shared"
+                },
+                "group": { "kind": "build", "isDefault": true },
+            }
+        ]
+    }
+}
