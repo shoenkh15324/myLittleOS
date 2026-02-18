@@ -37,11 +37,6 @@ static void _appMainTimerHandler(void* arg){ //logDebug("_appMainTimerHandler");
     activeObject* actor = (activeObject*)arg;
     if(actor->isMainThread){
         if(asyncPush(asyncTypeAsync, appMainEventTimer, 0, 0, 0, 0)){ logError("asyncPush fail"); }
-        // actor->appTimerCount += APP_TIMER_INTERVAL;
-        // if(actor->appTimerCount >= 2000){
-        //     if(asyncPush(asyncTypeAsync, appRenderEventTimer, 0, 0, 0, 0)){ logError("asyncPush fail"); }
-        //     actor->appTimerCount = 0;
-        // }
     }
 }
 static void _appMainEventHandler(void* arg1, void* arg2, void* arg3){

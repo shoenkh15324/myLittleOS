@@ -20,7 +20,7 @@ static void _actorThreadHandler(void* arg){
                 while(asyncPop(actor, &async, (uint8_t*)actor->pPayloadBuffer)){ //logDebug("_appMainEventHandler");
                     if(actor->appThreadHandler){ actor->appThreadHandler(actor, &async, actor->pPayloadBuffer); }
                 }
-            }else if((actor->isMainThread) && (fd == actor->appTimer.timerFd)){ //logDebug("timerFd");
+            }else if((actor->isMainThread) && (fd == actor->appTimer.hTimer)){ //logDebug("hTimer");
                 read(fd, &expired, sizeof(expired));
                 if(actor->appTimerHandler) actor->appTimerHandler(actor);
             }
@@ -28,16 +28,16 @@ static void _actorThreadHandler(void* arg){
 #elif APP_OS == OS_WIN32
         HANDLE handles[8];
         int handleIdx = 0;
-        handles[handleIdx++] = actor->objSema.semaHandle;
-        if(actor->isMainThread && actor->appTimer.timerHandle){ handles[handleIdx++] = actor->appTimer.timerHandle; }
-        DWORD triggeredIdx  = WaitForMultipleObjects(handleIdx, handles, FALSE, INFINITE);
-        if((triggeredIdx >= WAIT_OBJECT_0) && (triggeredIdx  < (WAIT_OBJECT_0 + handleIdx))){ //logDebug("triggeredIdx");
-            int event = triggeredIdx  - WAIT_OBJECT_0;
+        handles[handleIdx++] = actor->objSema.hSema;
+        if(actor->isMainThread && actor->appTimer.hTimer){ handles[handleIdx++] = actor->appTimer.hTimer; }
+        DWORD triggeredIdx = WaitForMultipleObjects(handleIdx, handles, FALSE, INFINITE);
+        if((triggeredIdx >= WAIT_OBJECT_0) && (triggeredIdx < (WAIT_OBJECT_0 + handleIdx))){ //logDebug("triggeredIdx");
+            int event = triggeredIdx - WAIT_OBJECT_0;
             if(event == 0){ //logDebug("semaphore event"); // semaphore event 
                 while(asyncPop(actor, &async, actor->pPayloadBuffer)){
                     if(actor->appThreadHandler) actor->appThreadHandler(actor, &async, actor->pPayloadBuffer);
                 }
-            }else if((event == 1) && actor->appTimer.timerHandle){ //logDebug("timer event"); // timer event
+            }else if((event == 1) && actor->appTimer.hTimer){ //logDebug("timer event"); // timer event
                 if(actor->appTimerHandler) actor->appTimerHandler(actor);
             }
         }else{
@@ -64,8 +64,10 @@ int activeOpen(activeObject* pHandle){
     osalMutexLock(&pHandle->objMutex, -1);
     pHandle->objState = objStateOpening;
     //
-    if(bufferOpen(&pHandle->eventQueue, pHandle->eventQueueSize)){ logError("bufferOpen fail");
-        result = retFail; goto appOpenExit;
+    for(int i = 0; i < (APP_THREAD_MAX_COUNT + 1); i++){
+        if(bufferOpen(&pHandle->eventQueue[i], pHandle->eventQueueSize)){ logError("bufferOpen fail");
+            result = retFail; goto appOpenExit;
+        }
     }
     if(osalMalloc((void**)&pHandle->pPayloadBuffer, pHandle->payloadBufferSize)){ logError("osalMalloc fail");
         result = retFail; goto appOpenExit;
@@ -78,7 +80,7 @@ int activeOpen(activeObject* pHandle){
             result = retFail; goto appOpenExit;
         }
 #if APP_OS == OS_LINUX
-        if(osalEpollAddFd(&pHandle->objEpoll, pHandle->appTimer.timerFd, osalEpollEventFlagIn)){ logError("osalEpollAddFd(timer) fail"); 
+        if(osalEpollAddFd(&pHandle->objEpoll, pHandle->appTimer.hTimer, osalEpollEventFlagIn)){ logError("osalEpollAddFd(timer) fail"); 
             result = retFail; goto appOpenExit;
         }
 #endif
@@ -103,9 +105,13 @@ int activeClose(activeObject* pHandle){
 #if APP_OS == OS_LINUX
         osalEpollNotify(&pHandle->objEpoll);
 #endif
-        if(pHandle->pPayloadBuffer){
-            osalFree(pHandle->pPayloadBuffer);
-            pHandle->pPayloadBuffer = NULL;
+        for(int i = 0; i < APP_THREAD_MAX_COUNT; i++){
+            if(bufferClose(&pHandle->eventQueue[i])){ logError("bufferClose fail"); 
+                return retFail; 
+            }
+        }
+        if(osalFree(pHandle->pPayloadBuffer)){ logError("osalFree fail"); 
+            return retFail;
         }
         if(osalThreadClose(&pHandle->appThread)){ logError("osalThreadClose fail");
             return retFail;

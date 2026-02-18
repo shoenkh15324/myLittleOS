@@ -18,7 +18,7 @@ typedef struct activeObject{
     osalEpoll objEpoll;
 #endif
     // Event Queue
-    ringBuffer eventQueue;
+    ringBuffer eventQueue[APP_THREAD_MAX_COUNT + 1];
     size_t eventQueueSize;
     // Thread
     osalThread appThread;

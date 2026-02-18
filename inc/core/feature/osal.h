@@ -26,9 +26,9 @@ void osalSleepUs(uint32_t);
 typedef void (*osalTimerCb)(void*);
 typedef struct osalTimer{
 #if APP_OS == OS_LINUX
-    int timerFd;
+    int hTimer;
 #elif APP_OS == OS_WIN32
-    HANDLE timerHandle;
+    HANDLE hTimer;
 #endif
     osalTimerCb timerCb;
     void* timerArg;
@@ -37,6 +37,15 @@ int osalTimerOpen(osalTimer*, osalTimerCb, void*, int);
 int osalTimerClose(osalTimer*);
 
 // Memory
+#if defined(_MSC_VER)
+    #include <intrin.h>
+    #define osalMemoryBarrier() MemoryBarrier()
+#elif defined(__GNUC__)
+    #define osalMemoryBarrier() __sync_synchronize()
+#else
+    #define osalMemoryBarrier() ((void)0)
+#endif
+
 int osalMalloc(void**, size_t);
 int osalFree(void*);
 
@@ -58,9 +67,9 @@ typedef struct osalThreadAttribute{
 } osalThreadAttribute;
 typedef struct osalThread{
 #if APP_OS == OS_LINUX
-    pthread_t thread;
+    pthread_t hThread;
 #elif APP_OS == OS_WIN32
-    HANDLE threadHandle;
+    HANDLE hThread;
     DWORD threadId;
 #endif
     int isCreated;
@@ -69,13 +78,14 @@ int osalThreadOpen(osalThread*, const osalThreadAttribute*, oslThreadCallback, v
 int osalThreadSetPriority(osalThread*, osalThreadPriority);
 int osalThreadJoin(osalThread*);
 int osalThreadClose(osalThread*);
+int osalThreadGetCurrent(osalThread*);
 
 // Mutex
 typedef struct osalMutex{
 #if APP_OS == OS_LINUX
-    pthread_mutex_t mutex;
+    pthread_mutex_t hMutex;
 #elif APP_OS == OS_WIN32
-    HANDLE mutexHandle;
+    HANDLE hMutex;
 #endif
 } osalMutex;
 int osalMutexOpen(osalMutex*);
@@ -86,9 +96,9 @@ int osalMutexUnlock(osalMutex*);
 // Semaphore
 typedef struct osalSemaphore{
 #if APP_OS == OS_LINUX
-    sem_t sema;
+    sem_t hSema;
 #elif APP_OS == OS_WIN32
-    HANDLE semaHandle;
+    HANDLE hSema;
 #endif
 } osalSemaphore;
 int osalSemaphoreOpen(osalSemaphore*, int);

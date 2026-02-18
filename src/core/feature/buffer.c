@@ -3,31 +3,11 @@
  *  Created: 2026-02-13
  ******************************************************************************/
 #include "appCfgSelector.h"
-
 #include "core/feature/buffer.h"
-#include <stdlib.h>
-#if APP_OS == OS_LINUX
-    #include <stdatomic.h>
-#endif
 #include "core/feature/log.h"
 #include "core/feature/osal.h"
+#include <stdlib.h>
 
-static inline bool _bufferLock(ringBuffer* pHandle){
-#if APP_BUFFER_LOCK == SYSTEM_BUFFER_LOCK_ENABLE
-    if(!pHandle){ logError("Invaild Params"); return retInvalidParam; }
-    if(pHandle->lock){ logError("Already locked");
-        return retFail;
-    }
-    pHandle->lock = true;
-#endif
-    return retOk;
-}
-static inline void _bufferUnlock(ringBuffer* pHandle){
-#if APP_BUFFER_LOCK == SYSTEM_BUFFER_LOCK_ENABLE
-    if(!pHandle){ logError("Invaild Params"); return; }
-    pHandle->lock = false;
-#endif
-}
 int bufferOpen(ringBuffer* pHandle, size_t size){
     if(!pHandle || !size){ logError("Invaild Params"); return retInvalidParam; }
     if(bufferReset(pHandle)){ logError("bufferReset fail");
@@ -56,125 +36,54 @@ int bufferReset(ringBuffer* pHandle){
     pHandle->size = 0;
     pHandle->head = 0;
     pHandle->tail = 0;
-    pHandle->usage = 0;
-    pHandle->lock = false;
-#if APP_BUFFER_STATISTICS
-    pHandle->totalPopCount = 0;
-    pHandle->totalPushCount = 0;
-    pHandle->maxUsage = 0;
-#endif
     return retOk;
 }
 int bufferCanPush(ringBuffer* pHandle, size_t dataSize){
-#if APP_BUFFER_PUSH_OVERWRITE
-    if(!pHandle){ logError("Invaild Params"); return retInvalidParam; }
-    return ((pHandle->size - pHandle->usage) > dataSize) ? retOk : retFail;
-#else
+    if(!pHandle || !pHandle->pBuf || dataSize == 0){ logError("Invaild Params"); return retInvalidParam; }
+    size_t used = (pHandle->head >= pHandle->tail) ? (pHandle->head - pHandle->tail) : (pHandle->size - (pHandle->tail - pHandle->head));
+    if((pHandle->size - used - 1) < dataSize){
+        return retFail;
+    }
     return retOk;
-#endif
 }
-int bufferPush(ringBuffer* pHandle, uint8_t* data, size_t dataSize){
-    if(!pHandle || !data){ logError("Invaild Params"); return retInvalidParam; }
-    if(pHandle->pBuf == NULL){ logError("[SYSTEM] Invalid Params"); return retInvalidParam; }
-    _bufferLock(pHandle);
-    if(dataSize > pHandle->size){ logError("push fail: size(%zu) > cap(%zu)", dataSize, pHandle->size);
-        _bufferUnlock(pHandle);
+int bufferPush(ringBuffer* pHandle, uint8_t* data, size_t dataSize) {
+    if(!pHandle || !pHandle->pBuf || !data || dataSize == 0){ logError("Invaild Params"); return retInvalidParam; }
+    size_t head = pHandle->head;
+    size_t tail = pHandle->tail;
+    size_t used = (head >= tail) ? (head - tail) : (pHandle->size - (tail - head));
+    size_t freeSpace = (pHandle->size > used) ? (pHandle->size - used - 1) : 0;
+    if(dataSize > freeSpace){ logError("push fail: no space (need:%zu free:%zu)", dataSize, freeSpace);
         return retFail;
     }
-#if APP_BUFFER_PUSH_OVERWRITE
-    if((pHandle->usage + dataSize) > pHandle->size){
-        size_t overwriteSize = (pHandle->usage + dataSize) - pHandle->size;
-        logWarn("overwrite %zu bytes", overwriteSize);
-        pHandle->tail = (pHandle->tail + overwriteSize) % pHandle->size;
-        pHandle->usage -= overwriteSize;
-    #if APP_BUFFER_STATISTICS
-        pHandle->discardCount++;
-    #endif
-    }
-#else
-    if((pHandle->usage + dataSize) > pHandle->size){ logError("push fail: no space (need:%zu free:%zu)", dataSize, pHandle->size - pHandle->usage);
-        _bufferUnlock(pHandle);
-        return retFail;
-    }
-#endif
-    size_t spaceToEnd = pHandle->size - pHandle->head;
+    size_t spaceToEnd = pHandle->size - head;
     size_t firstChunk = (dataSize <= spaceToEnd) ? dataSize : spaceToEnd;
     size_t secondChunk = dataSize - firstChunk;
-    memcpy(&pHandle->pBuf[pHandle->head], data, firstChunk);
-    if(secondChunk){ memcpy(pHandle->pBuf, data + firstChunk, secondChunk); }
-    pHandle->head = (pHandle->head + dataSize) % pHandle->size;
-    pHandle->usage += dataSize;
-#if APP_BUFFER_STATISTICS
-    pHandle->totalPushCount++;
-    if(pHandle->usage > pHandle->maxUsage) pHandle->maxUsage = pHandle->usage;
-    logDebug("push %zu bytes (usage: %zu / %zu)", dataSize, pHandle->usage, pHandle->size);
-#endif
-    _bufferUnlock(pHandle);
+    memcpy(&pHandle->pBuf[head], data, firstChunk);
+    if (secondChunk > 0) {
+        memcpy(pHandle->pBuf, data + firstChunk, secondChunk);
+    }
+    osalMemoryBarrier();
+    pHandle->head = (head + dataSize) % pHandle->size;
     return retOk;
 }
 size_t bufferPop(ringBuffer* pHandle, uint8_t* pBuf, size_t bufSize){
     if(!pHandle || !pBuf){ logError("Invaild Params"); return retInvalidParam; }
-    _bufferLock(pHandle);
-    if(pHandle->usage == 0){ //logDebug("pop 0 bytes (empty)");
-        _bufferUnlock(pHandle);
-        return retOk;
+    size_t head = pHandle->head;
+    size_t tail = pHandle->tail;
+    osalMemoryBarrier();
+    size_t available = (head >= tail) ? (head - tail) : (pHandle->size - (tail - head));
+    if(available == 0){ // 데이터 없음 (Empty)
+        return 0; 
     }
-    size_t readSize = (bufSize < pHandle->usage) ? bufSize : pHandle->usage;
-    size_t spaceToEnd = pHandle->size - pHandle->tail;
+    size_t readSize = (bufSize < available) ? bufSize : available;
+    size_t spaceToEnd = pHandle->size - tail;
     size_t firstChunk = (readSize <= spaceToEnd) ? readSize : spaceToEnd;
     size_t secondChunk = readSize - firstChunk;
-    memcpy(pBuf, &pHandle->pBuf[pHandle->tail], firstChunk);
-    if(secondChunk){ memcpy(pBuf + firstChunk, pHandle->pBuf, secondChunk); }
-    pHandle->tail = (pHandle->tail + readSize) % pHandle->size;
-    pHandle->usage -= readSize;
-#if APP_BUFFER_STATISTICS
-    pHandle->totalPopCount++;
-    logDebug("pop %zu bytes (usage: %zu / %zu)", readSize, pHandle->usage, pHandle->size);
-#endif
-    _bufferUnlock(pHandle);
-    return readSize;
-}
-#if APP_BUFFER_PEAK
-size_t bufferPeek(ringBuffer* pHandle, uint8_t* pBuf, size_t bufSize){
-    if(!pHandle || !pBuf){ logError("Invaild Params"); return retInvalidParam; }
-    _bufferLock(pHandle);
-    if(pHandle->usage == 0){ logDebug("peek 0 bytes (empty)");
-        _bufferUnlock(pHandle);
-        return 0;
+    memcpy(pBuf, &pHandle->pBuf[tail], firstChunk);
+    if(secondChunk > 0){
+        memcpy(pBuf + firstChunk, pHandle->pBuf, secondChunk);
     }
-    size_t readSize = (bufSize < pHandle->usage) ? bufSize : pHandle->usage;
-    size_t spaceToEnd = pHandle->size - pHandle->tail;
-    size_t firstChunk = (readSize <= spaceToEnd) ? readSize : spaceToEnd;
-    size_t secondChunk = readSize - firstChunk;
-    memcpy(pBuf, &pHandle->pBuf[pHandle->tail], firstChunk);
-    if(secondChunk){ memcpy(pBuf + firstChunk, pHandle->pBuf, secondChunk); }
-    logDebug("peek %zu bytes (usage: %zu / %zu)", readSize, pHandle->usage, pHandle->size);
-    _bufferUnlock(pHandle);
+    osalMemoryBarrier();
+    pHandle->tail = (tail + readSize) % pHandle->size;
     return readSize;
-}
-#endif
-
-size_t inline bufferGetTotalPushCount(ringBuffer* pHandle){
-    if(!pHandle){ logError("Invaild Params"); return retInvalidParam; }
-    return pHandle->totalPushCount;
-}
-size_t inline bufferGetTotalPopped(ringBuffer* pHandle){
-    if(!pHandle){ logError("Invaild Params"); return retInvalidParam; }
-    return pHandle->totalPopCount;
-}
-size_t inline bufferGetCurrentUsage(ringBuffer* pHandle){
-    if(!pHandle){ logError("Invaild Params"); return retInvalidParam; }
-    return pHandle->usage;
-}
-size_t inline bufferGetMaxUsage(ringBuffer* pHandle){
-    if(!pHandle){ logError("Invaild Params"); return retInvalidParam; }
-    return pHandle->maxUsage;
-}
-size_t inline bufferGetDiscardCount(ringBuffer* pHandle){
-    if(!pHandle){ logError("Invaild Params"); return retInvalidParam; }
-    return pHandle->discardCount;
-}
-size_t inline bufferGetPushFailCount(ringBuffer* pHandle){
-    if(!pHandle){ logError("Invaild Params"); return retInvalidParam; }
-    return pHandle->pushFailCount;
 }

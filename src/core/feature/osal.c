@@ -108,8 +108,8 @@ int osalTimerOpen(osalTimer* pHandle, osalTimerCb expiredCallback, void* arg, in
 #if APP_TIMER == SYSTEM_OSAL_TIMER_ENABLE
     if(!pHandle || !expiredCallback || !periodMs){ logError("Invaild Params"); return retInvalidParam; }
     #if (APP_OS == OS_LINUX) && APP_EPOLL
-        pHandle->timerFd = timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK);
-        if(pHandle->timerFd == -1){ logError("timerfd_create fail");
+        pHandle->hTimer = timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK);
+        if(pHandle->hTimer == -1){ logError("timerfd_create fail");
             return retFail;
         }
         pHandle->timerCb = expiredCallback;
@@ -118,21 +118,21 @@ int osalTimerOpen(osalTimer* pHandle, osalTimerCb expiredCallback, void* arg, in
         its.it_value.tv_sec = periodMs / 1000;
         its.it_value.tv_nsec = (periodMs % 1000) * 1000000;
         its.it_interval = its.it_value;
-        if(timerfd_settime(pHandle->timerFd, 0, &its, NULL) == -1){ logError("timerfd_settime fail");
-            close(pHandle->timerFd);
+        if(timerfd_settime(pHandle->hTimer, 0, &its, NULL) == -1){ logError("timerfd_settime fail");
+            close(pHandle->hTimer);
             return retFail;
         }
     #elif APP_OS == OS_WIN32
-        pHandle->timerHandle = CreateWaitableTimer(NULL, false, NULL);
-        if(!pHandle->timerHandle){ logError("CreateWaitableTimer fail");
+        pHandle->hTimer = CreateWaitableTimer(NULL, false, NULL);
+        if(!pHandle->hTimer){ logError("CreateWaitableTimer fail");
             return retFail;
         }
         pHandle->timerCb = expiredCallback;
         pHandle->timerArg = arg;
         LARGE_INTEGER dueTime;
         dueTime.QuadPart = -(LONGLONG)periodMs * 10000;
-        if(!SetWaitableTimer(pHandle->timerHandle, &dueTime, periodMs, NULL, NULL, false)){ logError("SetWaitableTimer fail");
-            CloseHandle(pHandle->timerHandle);
+        if(!SetWaitableTimer(pHandle->hTimer, &dueTime, periodMs, NULL, NULL, false)){ logError("SetWaitableTimer fail");
+            CloseHandle(pHandle->hTimer);
             return retFail;
         }
     #endif
@@ -143,17 +143,17 @@ int osalTimerClose(osalTimer* pHandle){
 #if APP_TIMER == SYSTEM_OSAL_TIMER_ENABLE
     if(!pHandle){ logError("Invaild Params"); return retInvalidParam; }
     #if (APP_OS == OS_LINUX) && APP_EPOLL
-        if (pHandle->timerFd >= 0) {
+        if (pHandle->hTimer >= 0) {
             struct itimerspec its = {0};
-            timerfd_settime(pHandle->timerFd, 0, &its, NULL);
-            close(pHandle->timerFd);
-            pHandle->timerFd = -1;
+            timerfd_settime(pHandle->hTimer, 0, &its, NULL);
+            close(pHandle->hTimer);
+            pHandle->hTimer = -1;
         }
     #elif APP_OS == OS_WIN32
-        if(pHandle->timerHandle){
-            CancelWaitableTimer(pHandle->timerHandle);
-            CloseHandle(pHandle->timerHandle);
-            pHandle->timerHandle = NULL;
+        if(pHandle->hTimer){
+            CancelWaitableTimer(pHandle->hTimer);
+            CloseHandle(pHandle->hTimer);
+            pHandle->hTimer = NULL;
         }
     #endif
 #endif
@@ -237,7 +237,7 @@ int osalThreadOpen(osalThread* pHandle, const osalThreadAttribute* attr, oslThre
                 return retFail; 
             }
         }
-        if(pthread_create(&(pHandle->thread), &threadAttrLinux, (void *(*)(void *))threadEntryCb, userArg)){ logError("pthread_create fail");
+        if(pthread_create(&(pHandle->hThread), &threadAttrLinux, (void *(*)(void *))threadEntryCb, userArg)){ logError("pthread_create fail");
             pthread_attr_destroy(&threadAttrLinux);
             return retFail;
         }
@@ -250,8 +250,8 @@ int osalThreadOpen(osalThread* pHandle, const osalThreadAttribute* attr, oslThre
         }
         win32Arg->userCallback = threadEntryCb;
         win32Arg->userArg = userArg;
-        pHandle->threadHandle = CreateThread(NULL, attr->statckSize, _win32ThreadWrapper, win32Arg, 0, &pHandle->threadId);
-        if(!pHandle->threadHandle){ logError("CreateThread fail");
+        pHandle->hThread = CreateThread(NULL, attr->statckSize, _win32ThreadWrapper, win32Arg, 0, &pHandle->threadId);
+        if(!pHandle->hThread){ logError("CreateThread fail");
             osalFree(win32Arg);
             return retFail;
         }
@@ -273,7 +273,7 @@ int osalThreadSetPriority(osalThread* pHandle, osalThreadPriority priority){
             policy = SCHED_OTHER;
             param.sched_priority = 0;
         }
-        if(pthread_setschedparam(pHandle->thread, policy, &param)){ logError("pthread_setschedparam fail");
+        if(pthread_setschedparam(pHandle->hThread, policy, &param)){ logError("pthread_setschedparam fail");
             return retFail;
         }
     #elif APP_OS == OS_WIN32
@@ -287,7 +287,7 @@ int osalThreadSetPriority(osalThread* pHandle, osalThreadPriority priority){
             case osalThreadPriorityHigh:        winPriority = THREAD_PRIORITY_HIGHEST; break;
             case osalThreadPriorityRealtime:    winPriority = THREAD_PRIORITY_TIME_CRITICAL; break;
         }
-        if(!SetThreadPriority(pHandle->threadHandle, winPriority)){ logError("SetThreadPriority fail");
+        if(!SetThreadPriority(pHandle->hThread, winPriority)){ logError("SetThreadPriority fail");
             return retFail;
         }
     #endif
@@ -299,19 +299,19 @@ int osalThreadJoin(osalThread* pHandle){
     if(!pHandle){ logError("Invaild Params"); return retInvalidParam; }
     #if APP_OS == OS_LINUX
         if(pHandle->isCreated){
-            if(pthread_join(pHandle->thread, NULL)){ logError("pthread_join fail");
+            if(pthread_join(pHandle->hThread, NULL)){ logError("pthread_join fail");
                 return retFail;
             }
         }
         pHandle->isCreated = 0;
     #elif APP_OS == OS_WIN32
         if(pHandle->isCreated){
-            if(WaitForSingleObject(pHandle->threadHandle, INFINITE) != WAIT_OBJECT_0){ logError("WaitForSingleObject fail");
+            if(WaitForSingleObject(pHandle->hThread, INFINITE) != WAIT_OBJECT_0){ logError("WaitForSingleObject fail");
                 return retFail;
             }
         }
-        CloseHandle(pHandle->threadHandle);
-        pHandle->threadHandle = NULL;
+        CloseHandle(pHandle->hThread);
+        pHandle->hThread = NULL;
         pHandle->threadId = 0;
         pHandle->isCreated = 0;
     #endif
@@ -322,16 +322,26 @@ int osalThreadClose(osalThread* pHandle){
 #if APP_THREAD == SYSTEM_OSAL_THREAD_ENABLE
     if(!pHandle){ logError("Invaild Params"); return retInvalidParam; }
     #if APP_OS == OS_LINUX
-        if(pHandle->isCreated) pthread_detach(pHandle->thread);
-        pHandle->thread = 0;
+        if(pHandle->isCreated) pthread_detach(pHandle->hThread);
+        pHandle->hThread = 0;
         pHandle->isCreated = 0;
     #elif APP_OS == OS_WIN32
-        if(pHandle->isCreated && pHandle->threadHandle){
-            CloseHandle(pHandle->threadHandle);
-            pHandle->threadHandle = NULL;
+        if(pHandle->isCreated && pHandle->hThread){
+            CloseHandle(pHandle->hThread);
+            pHandle->hThread = NULL;
             pHandle->threadId = 0;
             pHandle->isCreated = 0;
         }
+    #endif
+#endif
+    return retOk;
+}
+int osalThreadGetCurrent(osalThread* pHandle){
+#if APP_THREAD == SYSTEM_OSAL_THREAD_ENABLE
+    #if APP_OS == OS_LINUX
+        pHandle->hThread = pthread_self();
+    #elif APP_OS == OS_WIN32
+        pHandle->hThread = GetCurrentThread();
     #endif
 #endif
     return retOk;
@@ -354,15 +364,15 @@ int osalMutexOpen(osalMutex* pHandle){
             pthread_mutexattr_destroy(&attr);
             return retFail;
         }
-        if(pthread_mutex_init(&(pHandle->mutex), &attr)){ logError("pthread_mutex_init fail");
+        if(pthread_mutex_init(&(pHandle->hMutex), &attr)){ logError("pthread_mutex_init fail");
             return retFail;
         }
         if(pthread_mutexattr_destroy(&attr)){ logError("pthread_mutexattr_destroy fail");
             return retFail;
         }
     #elif APP_OS == OS_WIN32
-        pHandle->mutexHandle = CreateMutex(NULL, FALSE, NULL);
-        if(pHandle->mutexHandle == NULL){ logError("CreateMutex fail"); 
+        pHandle->hMutex = CreateMutex(NULL, FALSE, NULL);
+        if(pHandle->hMutex == NULL){ logError("CreateMutex fail"); 
             return retFail;
         }
     #endif
@@ -373,12 +383,12 @@ int osalMutexClose(osalMutex* pHandle){
 #if APP_MUTEX == SYSTEM_OSAL_MUTEX_ENABLE
     if(!pHandle){ logError("Invaild Params"); return retInvalidParam; }
     #if APP_OS == OS_LINUX
-        if(pthread_mutex_destroy(&(pHandle->mutex))){ logError("pthread_mutex_destroy fail");
+        if(pthread_mutex_destroy(&(pHandle->hMutex))){ logError("pthread_mutex_destroy fail");
             return retFail;
         }
     #elif APP_OS == OS_WIN32
-        if(pHandle->mutexHandle){ CloseHandle(pHandle->mutexHandle); }
-        pHandle->mutexHandle = NULL;
+        if(pHandle->hMutex){ CloseHandle(pHandle->hMutex); }
+        pHandle->hMutex = NULL;
     #endif
 #endif
     return retOk;
@@ -389,9 +399,9 @@ int osalMutexLock(osalMutex* pHandle, int timeoutMs){
     #if APP_OS == OS_LINUX
         int res = 0;
         if(timeoutMs < 0){
-            res = pthread_mutex_lock(&pHandle->mutex);
+            res = pthread_mutex_lock(&pHandle->hMutex);
         }else if (timeoutMs == 0){
-            res = pthread_mutex_trylock(&pHandle->mutex);
+            res = pthread_mutex_trylock(&pHandle->hMutex);
         }else{
             struct timespec absTime;
             clock_gettime(CLOCK_MONOTONIC, &absTime);
@@ -401,7 +411,7 @@ int osalMutexLock(osalMutex* pHandle, int timeoutMs){
                 absTime.tv_sec += 1;
                 absTime.tv_nsec -= 1000000000L;
             }
-            res = pthread_mutex_timedlock(&pHandle->mutex, &absTime);
+            res = pthread_mutex_timedlock(&pHandle->hMutex, &absTime);
         }
         if(res != 0){
             if(res == ETIMEDOUT){ logError("Mutex Lock: Timeout (%dms)", timeoutMs);
@@ -412,7 +422,7 @@ int osalMutexLock(osalMutex* pHandle, int timeoutMs){
         }
     #elif APP_OS == OS_WIN32
         DWORD waitTime = (timeoutMs < 0) ? INFINITE : (DWORD)timeoutMs;
-        DWORD res = WaitForSingleObject(pHandle->mutexHandle, waitTime);
+        DWORD res = WaitForSingleObject(pHandle->hMutex, waitTime);
         if(res == WAIT_TIMEOUT) return retTimeout;
         if(res != WAIT_OBJECT_0){ logError("WaitForSingleObject fail"); 
             return retFail;
@@ -425,11 +435,11 @@ int osalMutexUnlock(osalMutex* pHandle){
 #if APP_MUTEX == SYSTEM_OSAL_MUTEX_ENABLE
     if(!pHandle){ logError("Invaild Params"); return retInvalidParam; }
     #if APP_OS == OS_LINUX
-        if(pthread_mutex_unlock(&(pHandle->mutex))){ logError("pthread_mutex_unlock fail");
+        if(pthread_mutex_unlock(&(pHandle->hMutex))){ logError("pthread_mutex_unlock fail");
             return retFail;
         }
     #elif APP_OS == OS_WIN32
-        if(!ReleaseMutex(pHandle->mutexHandle)){ logError("ReleaseMutex fail"); 
+        if(!ReleaseMutex(pHandle->hMutex)){ logError("ReleaseMutex fail"); 
             return retFail; 
         }
     #endif
@@ -448,15 +458,15 @@ int osalSemaphoreOpen(osalSemaphore* pHandle, int count){
         initCount = (count == -1) ? APP_SEMAPHORE_MAX_COUNT : (unsigned int)count;
     #endif
     #if APP_OS == OS_LINUX
-        if(sem_init(&(pHandle->sema), 0, initCount) != 0) {
+        if(sem_init(&(pHandle->hSema), 0, initCount) != 0) {
             logError("sem_init fail");
             return retFail;
         }
     #elif APP_OS == OS_WIN32
         // max count: binary -> 1, counting -> APP_SEMAPHORE_MAX_COUNT
         int maxCount = (APP_SEMAPHORE_TYPE == SYSTEM_OSAL_SEMAPHORE_TYPE_BINARY) ? 1 : APP_SEMAPHORE_MAX_COUNT;
-        pHandle->semaHandle = CreateSemaphore(NULL, initCount, maxCount, NULL);
-        if(pHandle->semaHandle == NULL){ logError("CreateSemaphore fail"); 
+        pHandle->hSema = CreateSemaphore(NULL, initCount, maxCount, NULL);
+        if(pHandle->hSema == NULL){ logError("CreateSemaphore fail"); 
             return retFail;
         }
     #endif
@@ -467,12 +477,12 @@ int osalSemaphoreClose(osalSemaphore* pHandle){
 #if APP_SEMAPHORE == SYSTEM_OSAL_SEMAPHORE_ENABLE
     if(!pHandle){ logError("Invaild Params"); return retInvalidParam; }
     #if APP_OS == OS_LINUX
-        if(sem_destroy(&(pHandle->sema)) != 0){ logError("sem_destroy fail");
+        if(sem_destroy(&(pHandle->hSema)) != 0){ logError("sem_destroy fail");
             return retFail;
         }
     #elif APP_OS == OS_WIN32
-        if(pHandle->semaHandle){ CloseHandle(pHandle->semaHandle); }
-        pHandle->semaHandle = NULL;
+        if(pHandle->hSema){ CloseHandle(pHandle->hSema); }
+        pHandle->hSema = NULL;
     #endif
 #endif
     return retOk;
@@ -483,9 +493,9 @@ int osalSemaphoreTake(osalSemaphore* pHandle, int timeoutMs){
     #if APP_OS == OS_LINUX
         int res = 0;
         if(timeoutMs < 0){
-            res = sem_wait(&pHandle->sema);
+            res = sem_wait(&pHandle->hSema);
         }else if (timeoutMs == 0){
-            res = sem_trywait(&pHandle->sema);
+            res = sem_trywait(&pHandle->hSema);
         }else{
             struct timespec absTime;
             clock_gettime(CLOCK_MONOTONIC, &absTime);
@@ -495,7 +505,7 @@ int osalSemaphoreTake(osalSemaphore* pHandle, int timeoutMs){
                 absTime.tv_sec += 1;
                 absTime.tv_nsec -= 1000000000L;
             }
-            res = sem_timedwait(&pHandle->sema, &absTime);
+            res = sem_timedwait(&pHandle->hSema, &absTime);
         }
         if(res != 0){
             if(errno == ETIMEDOUT){ logError("Semaphore Take: Timeout (%dms)", timeoutMs);
@@ -506,7 +516,7 @@ int osalSemaphoreTake(osalSemaphore* pHandle, int timeoutMs){
         }
     #elif APP_OS == OS_WIN32
         DWORD waitTime = (timeoutMs < 0) ? INFINITE : (DWORD)timeoutMs;
-        DWORD res = WaitForSingleObject(pHandle->semaHandle, waitTime);
+        DWORD res = WaitForSingleObject(pHandle->hSema, waitTime);
         if(res == WAIT_TIMEOUT) return retTimeout;
         if(res != WAIT_OBJECT_0){ logError("WaitForSingleObject fail"); 
             return retFail; 
@@ -519,11 +529,11 @@ int osalSemaphoreGive(osalSemaphore* pHandle){
 #if APP_SEMAPHORE == SYSTEM_OSAL_SEMAPHORE_ENABLE
     if(!pHandle){ logError("Invaild Params"); return retInvalidParam; }
     #if APP_OS == OS_LINUX
-        if(sem_post(&(pHandle->sema)) != 0){ logError("sem_post fail");
+        if(sem_post(&(pHandle->hSema)) != 0){ logError("sem_post fail");
             return retFail;
         }
     #elif APP_OS == OS_WIN32
-        if(!ReleaseSemaphore(pHandle->semaHandle, 1, NULL)){ logError("ReleaseSemaphore fail");
+        if(!ReleaseSemaphore(pHandle->hSema, 1, NULL)){ logError("ReleaseSemaphore fail");
             return retFail;
         }
     #endif

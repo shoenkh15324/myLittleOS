@@ -12,17 +12,18 @@ static driverPlatformWin32 _driverPlatformWin32 = {
 
 static void _driverPlatformWin32PeekMessage(void){
     MSG msg;
-    while(PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)){ logDebug("PeekMessage");
+    while(PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)){ //logDebug("PeekMessage");
         TranslateMessage(&msg);
         DispatchMessage(&msg);
     }
 }
-static LRESULT CALLBACK _driverPlatformWin32WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam){ logDebug("_driverPlatformWin32WindowProc msg=0x%X", msg);
+static LRESULT CALLBACK _driverPlatformWin32WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam){ //logDebug("_driverPlatformWin32WindowProc msg=0x%X", msg);
     switch(msg){
         case WM_CLOSE:
+            asyncPush(asyncTypeAsync, appMainEventPlatformWin32DestroyWindow, 0, 0, 0 ,0);
             return 0;
         case WM_SIZE:
-            _driverPlatformWin32.msgNeedAsync = WM_SIZE;
+            asyncPush(asyncTypeAsync, appMainEventPlatformWin32ResizeWindow, LOWORD(lParam), HIWORD(lParam), 0 ,0);
             return 0;
         case WM_PAINT:
             return 0;
