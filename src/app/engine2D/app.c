@@ -37,20 +37,36 @@ static void _appMainTimerHandler(void* arg){ //logDebug("_appMainTimerHandler");
     activeObject* actor = (activeObject*)arg;
     if(actor->isMainThread){
         if(asyncPush(asyncTypeAsync, appMainEventTimer, 0, 0, 0, 0)){ logError("asyncPush fail"); }
-        actor->appTimerCount += APP_TIMER_INTERVAL;
-        if(actor->appTimerCount >= 2000){
-            if(asyncPush(asyncTypeAsync, appRenderEventTimer, 0, 0, 0, 0)){ logError("asyncPush fail"); }
-            actor->appTimerCount = 0;
-        }
+        // actor->appTimerCount += APP_TIMER_INTERVAL;
+        // if(actor->appTimerCount >= 2000){
+        //     if(asyncPush(asyncTypeAsync, appRenderEventTimer, 0, 0, 0, 0)){ logError("asyncPush fail"); }
+        //     actor->appTimerCount = 0;
+        // }
     }
 }
 static void _appMainEventHandler(void* arg1, void* arg2, void* arg3){
     activeObject* actor = (activeObject*)arg1;
     asyncPacket* pAsync = (asyncPacket*)arg2;
     uint8_t* pPayload = (uint8_t*)arg3;
+#if APP_OS == OS_WIN32
+    MSG msg;
+    while(PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)){ logDebug("PeekMessage");
+        TranslateMessage(&msg);
+        DispatchMessage(&msg);
+    }
+#endif
     osalMutexLock(&actor->objMutex, -1);
     switch(pAsync->eventId){
         case appMainEventTimer: //logDebug("appMainEventTimer");
+            driverCommonSync(driverCommonSyncTimer, 0, 0, 0, 0);
+            serviceCommonSync(serviceCommonSyncTimer, 0, 0, 0, 0);
+            break;
+        // Win32
+        case appMainEventPlatformWin32DestroyWindow:
+            driverPlatformWin32Sync(driverPlatformWin32SyncDestroyWindow, 0, 0, 0, 0);
+            break;
+        case appMainEventPlatformWin32ResizeWindow:
+            driverPlatformWin32Sync(driverPlatformWin32SyncResizeWindow, pAsync->arg1, pAsync->arg2, 0, 0);
             break;
     }
     osalMutexUnlock(&actor->objMutex);
@@ -80,6 +96,9 @@ int appOpen(void){
         return retFail;
     }
     if(activeOpen(&_appRender.actor)){ logError("activeOpen fail / %s", _appRender.actor.appThreadAttr.name);
+        return retFail;
+    }
+    if(driverPlatformWin32Sync(driverPlatformWin32SyncCreateWindow, (uintptr_t)"engin2D", 1200, 800, 0)){ logError("driverPlatformWin32SyncCreateWindow fail");
         return retFail;
     }
 appOpenExit:

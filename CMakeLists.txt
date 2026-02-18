@@ -52,6 +52,8 @@ set(SRCS
     src/core/physics/world/world2D.c
     # Driver
     src/driver/driverCommon.c
+    src/driver/platform/win32/driverPlatformWin32.c
+    src/driver/gfx/opengl/driverOpengl.c
     # Service
     src/service/serviceCommon.c
     # App

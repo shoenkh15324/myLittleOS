@@ -10,5 +10,10 @@
     #include "service/sample/serviceSample.h"
 #endif
 
+enum{
+    serviceCommonSyncTimer = 0,
+};
+
 int serviceCommonClose(void);
 int serviceCommonOpen(void);
+int serviceCommonSync(uint16_t, uintptr_t, uintptr_t, uintptr_t, uintptr_t);

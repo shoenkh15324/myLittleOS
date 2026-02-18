@@ -7,16 +7,6 @@
 #include "core/feature/active.h"
 
 typedef enum{
-    // appMain
-    appMainEventStart = objSyncBegin,
-        appMainEventTimer,
-    appMainEventEnd = 99,
-    // appTest
-    appRenderEventStart = 100,
-        appRenderEventTimer,
-    appRenderEventEnd = 199,
-} appEventList;
-typedef enum{
     appMainStateXXX = objStateBegin,
 } appMainState;
 typedef enum{

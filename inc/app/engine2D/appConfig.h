@@ -9,6 +9,20 @@
 
 #if defined (APP_ENGINE_2D)
 
+typedef enum{
+    // appMain
+    appMainEventStart = objSyncBegin,
+        appMainEventTimer,
+        // Win32
+        appMainEventPlatformWin32DestroyWindow,
+        appMainEventPlatformWin32ResizeWindow,
+    appMainEventEnd = 99,
+    // appTest
+    appRenderEventStart = 100,
+        appRenderEventTimer,
+    appRenderEventEnd = 199,
+} appEventList;
+
 /* [INFO]*/
 #define APP_NAME "Engine 2D"
 #define APP_AUTHOR "Minkyu Kim"
@@ -21,7 +35,16 @@
 #define APP_OS OS_WIN32
 #define APP_SDK SDK_WINDOW
 #define APP_BOARD BOARD_NONE
-#if APP_BOARD
+#if (APP_BOARD == BOARD_NONE) && (APP_OS == OS_LINUX)
+    #define APP_DRIVER_XXX 0
+#elif (APP_BOARD == BOARD_NONE) && (APP_OS == OS_WIN32)
+    #define APP_DRIVER_PLATFORM DRIVER_PLATFORM_WIN32
+    #if APP_DRIVER_PLATFORM == DRIVER_PLATFORM_WIN32
+        #define DRIVER_PLATFORM_WIN32_WINDOW_CLASS_NAME L"engine2dWindowClass"
+        #define DRIVER_PLATFORM_WIN32_WM_USER_RESIZE (WM_USER + 1)
+    #endif
+    #define APP_DRIVER_GFX DRIVER_GFX_OPENGL
+#elif APP_BOARD
     #define APP_DRIVER_XXX 0
 #endif
 
@@ -42,7 +65,7 @@
 /* [BUFFER] */
 #define APP_BUFFER_PEAK 0//SYSTEM_BUFFER_PEAK_ENABLE
 #define APP_BUFFER_PUSH_OVERWRITE 0
-#define APP_BUFFER_STATISTICS 0
+#define APP_BUFFER_STATISTICS 1
 #define APP_BUFFER_LOCK SYSTEM_BUFFER_LOCK_ENABLE
 
 /* [OSAL] */
