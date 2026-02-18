@@ -450,23 +450,19 @@ int osalMutexUnlock(osalMutex* pHandle){
 // Semaphore
 int osalSemaphoreOpen(osalSemaphore* pHandle, int count){
 #if APP_SEMAPHORE == SYSTEM_OSAL_SEMAPHORE_ENABLE
-    if(!pHandle){ logError("Invaild Params"); return retInvalidParam; }
-    unsigned int initCount = 0;
+    if(!pHandle){ logError("Invalid Params"); return retInvalidParam; }
+    int maxCount = (count <= 0) ? APP_SEMAPHORE_MAX_COUNT : count; 
     #if APP_SEMAPHORE_TYPE == SYSTEM_OSAL_SEMAPHORE_TYPE_BINARY
-        initCount = (count > 0) ? 1 : 0;
-    #else
-        initCount = (count == -1) ? APP_SEMAPHORE_MAX_COUNT : (unsigned int)count;
+        maxCount = 1;
     #endif
     #if APP_OS == OS_LINUX
-        if(sem_init(&(pHandle->hSema), 0, initCount) != 0) {
+        if(sem_init(&(pHandle->hSema), 0, maxCount) != 0) {
             logError("sem_init fail");
             return retFail;
         }
     #elif APP_OS == OS_WIN32
-        // max count: binary -> 1, counting -> APP_SEMAPHORE_MAX_COUNT
-        int maxCount = (APP_SEMAPHORE_TYPE == SYSTEM_OSAL_SEMAPHORE_TYPE_BINARY) ? 1 : APP_SEMAPHORE_MAX_COUNT;
-        pHandle->hSema = CreateSemaphore(NULL, initCount, maxCount, NULL);
-        if(pHandle->hSema == NULL){ logError("CreateSemaphore fail"); 
+        pHandle->hSema = CreateSemaphore(NULL, 0, maxCount, NULL);
+        if(pHandle->hSema == NULL){ logError("CreateSemaphore fail / GetLastError=%lu", GetLastError());
             return retFail;
         }
     #endif
@@ -527,13 +523,15 @@ int osalSemaphoreTake(osalSemaphore* pHandle, int timeoutMs){
 }
 int osalSemaphoreGive(osalSemaphore* pHandle){
 #if APP_SEMAPHORE == SYSTEM_OSAL_SEMAPHORE_ENABLE
-    if(!pHandle){ logError("Invaild Params"); return retInvalidParam; }
+    if(!pHandle || !pHandle->hSema){ logError("Invaild Params"); return retInvalidParam; }
     #if APP_OS == OS_LINUX
         if(sem_post(&(pHandle->hSema)) != 0){ logError("sem_post fail");
             return retFail;
         }
     #elif APP_OS == OS_WIN32
-        if(!ReleaseSemaphore(pHandle->hSema, 1, NULL)){ logError("ReleaseSemaphore fail");
+        if(!ReleaseSemaphore(pHandle->hSema, 1, NULL)){
+            DWORD err = GetLastError();
+            logError("ReleaseSemaphore fail / hSema=%p / GetLastError=%lu", pHandle->hSema, err);
             return retFail;
         }
     #endif

@@ -17,6 +17,8 @@ int systemOpen(void){
     driverCommonOpen();
     serviceCommonOpen();
     appCommonOpen();
-    while(1){ osalSleepMs(1000); }
+    while(1){ 
+        osalSleepMs(1000); 
+    }
     return 0;
 }

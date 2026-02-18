@@ -24,7 +24,7 @@ static int _asyncLookupSenderIdx(void){
 }
 static void* _asyncLookupTarget(uint16_t eventId){
     for(int i = 0; i < _asyncSubCnt; i++){
-        if((eventId >= _asyncSubscriber[i].startId) && (eventId <= _asyncSubscriber[i].endId)){
+        if((eventId > _asyncSubscriber[i].startId) && (eventId < _asyncSubscriber[i].endId)){
             return _asyncSubscriber[i].pActObj;
         }
     }
@@ -80,11 +80,10 @@ int asyncPush(asyncType type, uint16_t eventId, uintptr_t arg1, uintptr_t arg2, 
             break;
         }
     }
-    osalSemaphoreGive(&pTarget->objSema);
 #if APP_OS == OS_LINUX
     osalEpollNotify(&pTarget->objEpoll);
-#elif APP_OS == OS_WIN32
-    // Windows에서는 Semaphore만 Give하면 _actorThreadHandler가 깨어남. 별도 notify 필요 없음
+#else
+    osalSemaphoreGive(&pTarget->objSema);
 #endif
     return retOk;
 }
@@ -92,16 +91,15 @@ size_t asyncPop(struct activeObject* pTarget, asyncPacket* pOutPacket, uint8_t* 
     if(!pTarget || !pOutPacket || !payloadBuf){ logError("Invaild Params"); return retInvalidParam; }
     for(int i = 0; i < (APP_THREAD_MAX_COUNT + 1); i++){
         size_t popResult = bufferPop(&pTarget->eventQueue[i], (uint8_t*)pOutPacket, sizeof(asyncPacket));
-        if(popResult < 0){ logError("bufferPop fail");
-            return retFail;
-        }
-        //logDebug("asyncPop / [From SenderIdx:%d] Event:0x%04X, Target:%s", i, pOutPacket->eventId, pTarget->appThreadAttr.name);
-        if(pOutPacket->type == asyncTypeAsyncPayload){
-            if(bufferPop(&pTarget->eventQueue[i], payloadBuf, pOutPacket->payloadSize) < 0){ logError("payload bufferPop fail");
-                return retFail;
+        if(popResult > 0){ 
+            //logDebug("asyncPop / [From SenderIdx:%d] Event:0x%04X, Target:%s", i, pOutPacket->eventId, pTarget->appThreadAttr.name);
+            if(pOutPacket->type == asyncTypeAsyncPayload){
+                if(bufferPop(&pTarget->eventQueue[i], payloadBuf, pOutPacket->payloadSize) < 0){ logError("payload bufferPop fail");
+                    return retFail;
+                }
             }
+            return popResult;
         }
-        return popResult;
     }
     return 0;
 }

@@ -30,7 +30,7 @@ static void _actorThreadHandler(void* arg){
         int handleIdx = 0;
         handles[handleIdx++] = actor->objSema.hSema;
         if(actor->isMainThread && actor->appTimer.hTimer){ handles[handleIdx++] = actor->appTimer.hTimer; }
-        DWORD triggeredIdx = WaitForMultipleObjects(handleIdx, handles, FALSE, INFINITE);
+        DWORD triggeredIdx = MsgWaitForMultipleObjects(handleIdx, handles, FALSE, INFINITE, QS_ALLINPUT);
         if((triggeredIdx >= WAIT_OBJECT_0) && (triggeredIdx < (WAIT_OBJECT_0 + handleIdx))){ //logDebug("triggeredIdx");
             int event = triggeredIdx - WAIT_OBJECT_0;
             if(event == 0){ //logDebug("semaphore event"); // semaphore event 
@@ -40,8 +40,13 @@ static void _actorThreadHandler(void* arg){
             }else if((event == 1) && actor->appTimer.hTimer){ //logDebug("timer event"); // timer event
                 if(actor->appTimerHandler) actor->appTimerHandler(actor);
             }
-        }else{
-            logError("WaitForMultipleObjects fail or unexpected return (%lu)", triggeredIdx);
+        }
+        if(actor->isMainThread){
+            MSG msg;
+            while(PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)){
+                TranslateMessage(&msg);
+                DispatchMessage(&msg);
+            }
         }
 #else
         if(osalSemaphoreTake(&actor->objSema, -1)){

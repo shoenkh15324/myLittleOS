@@ -14,6 +14,7 @@ typedef enum{
     appMainEventStart = objSyncBegin,
         appMainEventTimer,
         // Win32
+        appMainEventPlatformWin32CreateWindow,
         appMainEventPlatformWin32DestroyWindow,
         appMainEventPlatformWin32ResizeWindow,
     appMainEventEnd = 99,
@@ -114,7 +115,7 @@ typedef enum{
 #endif
 #if APP_SEMAPHORE
     #define APP_SEMAPHORE_TYPE SYSTEM_OSAL_SEMAPHORE_TYPE_COUNTING
-    #define APP_SEMAPHORE_MAX_COUNT 99
+    #define APP_SEMAPHORE_MAX_COUNT 2024
     #define APP_SEMAPHORE_TIMEOUT_MS 0
 #endif
 

@@ -12,7 +12,7 @@ static driverPlatformWin32 _driverPlatformWin32 = {
 
 static void _driverPlatformWin32PeekMessage(void){
     MSG msg;
-    while(PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)){ //logDebug("PeekMessage");
+    while(PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)){ logDebug("PeekMessage");
         TranslateMessage(&msg);
         DispatchMessage(&msg);
     }
@@ -26,12 +26,17 @@ static LRESULT CALLBACK _driverPlatformWin32WindowProc(HWND hwnd, UINT msg, WPAR
             asyncPush(asyncTypeAsync, appMainEventPlatformWin32ResizeWindow, LOWORD(lParam), HIWORD(lParam), 0 ,0);
             return 0;
         case WM_PAINT:
+            PAINTSTRUCT ps;
+            HDC hdc = BeginPaint(hwnd, &ps); // 윈도우가 내부적으로 Validate를 수행함
+            EndPaint(hwnd, &ps);            // 윈도우에게 그리기가 끝났음을 공식 통보
+            return 0;
+        case WM_MOVE:
             return 0;
     }
     return DefWindowProc(hwnd, msg, wParam, lParam);
 }
-static void _driverPlatformWin32TimerHandler(void){
-    _driverPlatformWin32PeekMessage();
+static void _driverPlatformWin32TimerHandler(void){ //logDebug("_driverPlatformWin32TimerHandler");
+    //
 }
 int driverPlatformWin32Close(void){
     int result = retOk;
@@ -78,7 +83,7 @@ int driverPlatformWin32Sync(uint16_t sync, uintptr_t arg1, uintptr_t arg2, uintp
         case driverPlatformWin32SyncTimer: //logDebug("driverPlatformWin32SyncTimer");
             _driverPlatformWin32TimerHandler();
             break;
-        case driverPlatformWin32SyncCreateWindow:{ logDebug("driverPlatformWin32SyncCreateWindow");
+        case driverPlatformWin32SyncCreateWindow:{ //logDebug("driverPlatformWin32SyncCreateWindow");
             if(!arg1 || !arg2 || !arg3){ logError("Invalid Params");
                 result = retFail; goto syncExit;
             }
@@ -95,7 +100,7 @@ int driverPlatformWin32Sync(uint16_t sync, uintptr_t arg1, uintptr_t arg2, uintp
                 goto syncExit;
             }
             ShowWindow(_driverPlatformWin32.hwnd, SW_SHOW);
-            _driverPlatformWin32PeekMessage();
+            UpdateWindow(_driverPlatformWin32.hwnd);
             _driverPlatformWin32.hdc = GetDC(_driverPlatformWin32.hwnd);
             _driverPlatformWin32.running = 1;
             break;
