@@ -10,13 +10,6 @@ static driverPlatformWin32 _driverPlatformWin32 = {
     .objState = objStateClosed,
 };
 
-static void _driverPlatformWin32PeekMessage(void){
-    MSG msg;
-    while(PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)){ logDebug("PeekMessage");
-        TranslateMessage(&msg);
-        DispatchMessage(&msg);
-    }
-}
 static LRESULT CALLBACK _driverPlatformWin32WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam){ //logDebug("_driverPlatformWin32WindowProc msg=0x%X", msg);
     switch(msg){
         case WM_CLOSE:
@@ -28,7 +21,7 @@ static LRESULT CALLBACK _driverPlatformWin32WindowProc(HWND hwnd, UINT msg, WPAR
         case WM_PAINT:
             PAINTSTRUCT ps;
             HDC hdc = BeginPaint(hwnd, &ps); // 윈도우가 내부적으로 Validate를 수행함
-            EndPaint(hwnd, &ps);            // 윈도우에게 그리기가 끝났음을 공식 통보
+            EndPaint(hwnd, &ps); // 윈도우에게 그리기가 끝났음을 공식 통보
             return 0;
         case WM_MOVE:
             return 0;

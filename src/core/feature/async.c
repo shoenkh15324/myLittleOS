@@ -16,7 +16,11 @@ static int _asyncLookupSenderIdx(void){
         return -1;
     }
     for(int i = 0; i < _asyncSubCnt; i++){
+#if APP_OS == OS_WIN32
+        if(_asyncSubscriber[i].pActObj->appThread.threadId == currThread.threadId){
+#else
         if(_asyncSubscriber[i].pActObj->appThread.hThread == currThread.hThread){
+#endif
             return i;
         }
     }
@@ -92,7 +96,7 @@ size_t asyncPop(struct activeObject* pTarget, asyncPacket* pOutPacket, uint8_t* 
     for(int i = 0; i < (APP_THREAD_MAX_COUNT + 1); i++){
         size_t popResult = bufferPop(&pTarget->eventQueue[i], (uint8_t*)pOutPacket, sizeof(asyncPacket));
         if(popResult > 0){ 
-            //logDebug("asyncPop / [From SenderIdx:%d] Event:0x%04X, Target:%s", i, pOutPacket->eventId, pTarget->appThreadAttr.name);
+            logDebug("asyncPop / [From SenderIdx:%d] Event:%d, Target:%s", i, pOutPacket->eventId, pTarget->appThreadAttr.name);
             if(pOutPacket->type == asyncTypeAsyncPayload){
                 if(bufferPop(&pTarget->eventQueue[i], payloadBuf, pOutPacket->payloadSize) < 0){ logError("payload bufferPop fail");
                     return retFail;

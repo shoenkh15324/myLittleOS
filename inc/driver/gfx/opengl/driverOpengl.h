@@ -6,17 +6,32 @@
 #include "core/feature/osal.h"
 
 enum{
-    driverGfxOpenglSyncXXX = objSyncBegin,
+    driverOpenglSyncTimer = objSyncBegin,
+    driverOpenglSyncInit,
+    driverOpenglSyncDeinit,
+    driverOpenglSyncBeginFrame,
+    driverOpenglSyncEndFrame,
+    driverOpenglSyncDrawPrimitive,
+    driverOpenglSyncClear,
+    driverOpenglSyncSetClearColor,
+    driverOpenglSyncSetColor,
+    driverOpenglSyncUpdateViewport,
 };
 enum{
-    driverGfxOpenglStateXXX = objStateBegin,
+    driverOpenglStateXXX = objStateBegin,
 };
 
-typedef struct driverGfxOpengl{
+typedef struct driverOpengl{
     objectState objState;
     osalMutex objMutex;
-} driverGfxOpengl;
+#if APP_OS == OS_WIN32
+    HWND hwnd;
+    HDC hdc;
+    HGLRC glrc;
+#endif
+    volatile float currColor[3];
+} driverOpengl;
 
-int driverGfxOpenglOpen(void);
-int driverGfxOpenglClose(void);
-int driverGfxOpenglSync(uint16_t, uintptr_t, uintptr_t, uintptr_t, uintptr_t);
+int driverOpenglOpen(void);
+int driverOpenglClose(void);
+int driverOpenglSync(uint16_t, uintptr_t, uintptr_t, uintptr_t, uintptr_t);

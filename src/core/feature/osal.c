@@ -342,6 +342,7 @@ int osalThreadGetCurrent(osalThread* pHandle){
         pHandle->hThread = pthread_self();
     #elif APP_OS == OS_WIN32
         pHandle->hThread = GetCurrentThread();
+        pHandle->threadId = GetCurrentThreadId();
     #endif
 #endif
     return retOk;

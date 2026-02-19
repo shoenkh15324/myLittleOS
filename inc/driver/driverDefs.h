@@ -4,6 +4,12 @@
  *  Created: 2026-02-12
  ******************************************************************************/
 
+typedef enum{
+    gfxPrimitiveTypePoints = 0,
+    gfxPrimitiveTypeLines,
+    gfxPrimitiveTypeTriangles,
+} gfxPrimitiveType;
+
 /* [UART] */
 #define DRIVER_UART_NONE 0
 #define DRIVER_UART_STM32_HAL 1

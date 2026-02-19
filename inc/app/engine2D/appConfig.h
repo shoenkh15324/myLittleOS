@@ -21,6 +21,11 @@ typedef enum{
     // appTest
     appRenderEventStart = 100,
         appRenderEventTimer,
+        appRenderEventGfxOpenglInit,
+        appRenderEventGfxOpenglDeinit,
+        appRenderEventGfxOpenglSyncClear,
+        appRenderEventGfxOpenglSyncSetClearColor,
+        appRenderEventGfxOpenglSyncSetColor,
     appRenderEventEnd = 199,
 } appEventList;
 
@@ -50,7 +55,10 @@ typedef enum{
 #endif
 
 /* [SERVICE] */
-#define APP_SERVICE_XXX 0
+#define APP_SERVICE_RENDERING 1
+#if APP_SERVICE_RENDERING
+    #define APP_SERVICE_RENDERING_FPS 50
+#endif
 
 /* [LOG] */
 #define APP_LOG_ENABLE SYSTEM_LOG_ENABLE

@@ -4,6 +4,7 @@
  ******************************************************************************/
 #include "appCfgSelector.h"
 #include "app/appCommon.h"
+#include "core/physics/vector/vector2D.h"
 
 static void _appMainTimerHandler(void*);
 static void _appMainEventHandler(void*, void*, void*);
@@ -37,6 +38,11 @@ static void _appMainTimerHandler(void* arg){ //logDebug("_appMainTimerHandler");
     activeObject* actor = (activeObject*)arg;
     if(actor->isMainThread){
         if(asyncPush(asyncTypeAsync, appMainEventTimer, 0, 0, 0, 0)){ logError("asyncPush fail"); }
+        _appMain.actor.appTimerCount += APP_TIMER_INTERVAL;
+        if(_appMain.actor.appTimerCount >= (1000 / APP_SERVICE_RENDERING_FPS)){
+            if(asyncPush(asyncTypeAsync, appRenderEventTimer, 0, 0, 0, 0)){ logError("asyncPush fail"); }
+            _appMain.actor.appTimerCount = 0;
+        }
     }
 }
 static void _appMainEventHandler(void* arg1, void* arg2, void* arg3){
@@ -68,7 +74,24 @@ static void _appRenderEventHandler(void* arg1, void* arg2, void* arg3){
     uint8_t* pPayload = (uint8_t*)arg3;
     osalMutexLock(&actor->objMutex, -1);
     switch(pAsync->eventId){
-        case appRenderEventTimer: //logDebug("appRenderEventTimer");
+        case appRenderEventTimer: logDebug("appRenderEventTimer");
+            driverCommonSync(driverCommonSyncTimer, 0, 0, 0, 0);
+            serviceCommonSync(serviceCommonSyncTimer, 0, 0, 0, 0);
+            break;
+        case appRenderEventGfxOpenglInit:
+            driverOpenglSync(driverOpenglSyncInit, 0, 0, 0, 0);
+            break;
+        case appRenderEventGfxOpenglDeinit:
+            driverOpenglSync(driverOpenglSyncDeinit, 0, 0, 0, 0);
+            break;
+        case appRenderEventGfxOpenglSyncClear:
+            driverOpenglSync(driverOpenglSyncClear, 0, 0, 0, 0);
+            break;
+        case appRenderEventGfxOpenglSyncSetClearColor:
+            driverOpenglSync(driverOpenglSyncSetClearColor, pAsync->arg1, pAsync->arg2, pAsync->arg3, 0);
+            break;
+        case appRenderEventGfxOpenglSyncSetColor:
+            driverOpenglSync(driverOpenglSyncSetColor, pAsync->arg1, pAsync->arg2, pAsync->arg3, 0);
             break;
     }
     osalMutexUnlock(&actor->objMutex);
@@ -90,6 +113,15 @@ int appOpen(void){
         return retFail;
     }
     if(asyncPush(asyncTypeAsync, appMainEventPlatformWin32CreateWindow, (uintptr_t)"engin2D", 700, 500, 0)){logError("appMainEventPlatformWin32CreateWindow fail");
+        return retFail;
+    }
+    if(asyncPush(asyncTypeAsync, appRenderEventGfxOpenglInit, 0, 0, 0, 0)){logError("appRenderEventGfxOpenglInit fail");
+        return retFail;
+    }
+    if(asyncPush(asyncTypeAsync, appRenderEventGfxOpenglSyncSetClearColor, 0, 0, 0, 0)){logError("appRenderEventGfxOpenglInit fail");
+        return retFail;
+    }
+    if(asyncPush(asyncTypeAsync, appRenderEventGfxOpenglSyncSetColor, 255, 0, 0, 0)){logError("appRenderEventGfxOpenglInit fail");
         return retFail;
     }
 appOpenExit:

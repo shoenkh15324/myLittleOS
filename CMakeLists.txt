@@ -74,4 +74,8 @@ target_compile_definitions(${TARGET_NAME} PUBLIC
     ${APP_DEFINE_UPPER}=1
 )
 
+# 6. 라이브러리 링크
+if(WIN32)
+    list(APPEND EXTERNAL_LIBS opengl32 gdi32 user32)
+endif()
 target_link_libraries(${TARGET_NAME} PRIVATE ${EXTERNAL_LIBS})
