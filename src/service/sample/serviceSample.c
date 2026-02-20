@@ -10,17 +10,6 @@ static serviceSample _serviceSample = {
     .objState = objStateClosed,
 };
 
-int serviceSampleOpen(void){
-    int result = retOk;
-    osalMutexOpen(&_serviceSample.objMutex);
-    osalMutexLock(&_serviceSample.objMutex, -1);
-    _serviceSample.objState = objStateOpening;
-    //
-    _serviceSample.objState = objStateOpened;
-openExit:
-    osalMutexUnlock(&_serviceSample.objMutex);
-    return result;
-}
 int serviceSampleClose(void){
     int result = retOk;
     if(_serviceSample.objState >= objStateOpening){
@@ -31,6 +20,17 @@ int serviceSampleClose(void){
 closeExit:
         osalMutexUnlock(&_serviceSample.objMutex);
     }
+    return result;
+}
+int serviceSampleOpen(void){
+    int result = retOk;
+    osalMutexOpen(&_serviceSample.objMutex);
+    osalMutexLock(&_serviceSample.objMutex, -1);
+    _serviceSample.objState = objStateOpening;
+    //
+    _serviceSample.objState = objStateOpened;
+openExit:
+    osalMutexUnlock(&_serviceSample.objMutex);
     return result;
 }
 int serviceSampleSync(uint16_t sync, uintptr_t arg1, uintptr_t arg2, uintptr_t arg3, uintptr_t arg4){

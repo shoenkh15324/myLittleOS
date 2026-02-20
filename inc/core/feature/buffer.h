@@ -13,6 +13,7 @@ typedef struct ringBuffer{
 int bufferOpen(ringBuffer*, size_t);
 int bufferClose(ringBuffer*);
 int bufferReset(ringBuffer*);
+int bufferClear(ringBuffer*);
 int bufferCanPush(ringBuffer*, size_t);
 int bufferPush(ringBuffer*, uint8_t*, size_t);
 size_t bufferPop(ringBuffer*, uint8_t*, size_t);

@@ -30,13 +30,13 @@ void solver2dCollisionSolve(contact2d** contacts, int contactCount){
         vector2d impulse = vector2dScale(c->normal, j);
         // 속도에 적용
         if(!bodyA->isStatic){ bodyA->velocity = vector2dSub(bodyA->velocity, vector2dScale(impulse, bodyA->invMass)); }
-        if(!bodyB->isStatic){ bodyB->velocity = vector2dSub(bodyB->velocity, vector2dScale(impulse, bodyB->invMass)); }
+        if(!bodyB->isStatic){ bodyB->velocity = vector2dAdd(bodyB->velocity, vector2dScale(impulse, bodyB->invMass)); }
         // 침투 보정
         float percent = 0.2f; // 보정 비율
         float slop = 0.01f; // 허용 침투
         float correctionMagnitude = _slover2dClamp(c->penetration - slop, 0.0f, c->penetration) / invMassSum * percent;
         vector2d correction = vector2dScale(c->normal, correctionMagnitude);
         if(!bodyA->isStatic){ bodyA->position = vector2dSub(bodyA->position, vector2dScale(correction, bodyA->invMass)); }
-        if(!bodyB->isStatic){ bodyB->position = vector2dSub(bodyB->position, vector2dScale(correction, bodyB->invMass)); }
+        if(!bodyB->isStatic){ bodyB->position = vector2dAdd(bodyB->position, vector2dScale(correction, bodyB->invMass)); }
     }
 }

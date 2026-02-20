@@ -38,6 +38,12 @@ int bufferReset(ringBuffer* pHandle){
     pHandle->tail = 0;
     return retOk;
 }
+int bufferClear(ringBuffer* pHandle){
+    if(!pHandle){ logError("Invaild Params"); return retInvalidParam; }
+    pHandle->head = 0;
+    pHandle->tail = 0;
+    return retOk;
+}
 int bufferCanPush(ringBuffer* pHandle, size_t dataSize){
     if(!pHandle || !pHandle->pBuf || dataSize == 0){ logError("Invaild Params"); return retInvalidParam; }
     size_t used = (pHandle->head >= pHandle->tail) ? (pHandle->head - pHandle->tail) : (pHandle->size - (pHandle->tail - pHandle->head));

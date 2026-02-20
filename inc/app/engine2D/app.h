@@ -5,6 +5,7 @@
  ******************************************************************************/
 #include "core/system.h"
 #include "core/feature/active.h"
+#include "core/physics/world/world2D.h"
 
 typedef enum{
     appMainStateXXX = objStateBegin,
@@ -15,6 +16,7 @@ typedef enum{
 
 typedef struct appMain{
     activeObject actor;
+    world2d* world;
 } appMain;
 typedef struct appRender{
     activeObject actor;

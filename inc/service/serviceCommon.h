@@ -6,8 +6,8 @@
 #include "driver/driverCommon.h"
 #include "serviceDefs.h"
 
-#if APP_SERVICE_XXX == SERVICE_SAMPLE
-    #include "service/sample/serviceSample.h"
+#if APP_SERVICE_RENDERING == SERVICE_RENDERING_ENABLE
+    #include "service/rendering/serviceRendering.h"
 #endif
 
 enum{

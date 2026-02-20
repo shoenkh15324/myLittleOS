@@ -3,10 +3,11 @@
  *  Created: 2026-02-17
  ******************************************************************************/
 #include "core/physics/body/body2D.h"
+#include "core/physics/shape/shape2D.h"
 #include "core/feature/log.h"
 #include "core/feature/osal.h"
 
-body2d* body2dCreate(vector2d position, float mass, shape2d* shape, int isStatic){
+body2d* body2dCreate(vector2d position, float mass, shape2d* shape, int isStatic, uint32_t color){
     body2d* body = NULL;
     if(osalMalloc((void**)&body, sizeof(body2d))){ logError("osalMalloc fail");
         return NULL;
@@ -17,7 +18,9 @@ body2d* body2dCreate(vector2d position, float mass, shape2d* shape, int isStatic
     body->mass = mass;
     body->invMass = (isStatic || mass <= 0.0f) ? 0.0f : 1.0f / mass;
     body->shape = shape;
+    if(shape){ shape->body = body; }
     body->isStatic = isStatic;
+    body->color = color;
     return body;
 }
 void body2dDestroy(body2d* body){

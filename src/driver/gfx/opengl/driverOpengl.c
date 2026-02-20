@@ -35,6 +35,7 @@ static void _driverOpenglUpdateViewport(int width, int height){
 }
 static void _driverOpenglDrawPrimitive(gfxPrimitiveType type, const float* vertices, int vertexCount){
     if(vertices == NULL || vertexCount <= 0){ logError("Invliad Params"); return; }
+    glColor3f(_driverOpengl.currColor[0], _driverOpengl.currColor[1], _driverOpengl.currColor[2]);
     GLenum mode = _convertPrimitive(type);
     glBegin(mode);
     for(int i = 0; i < vertexCount; ++i){

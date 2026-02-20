@@ -13,20 +13,25 @@ typedef enum{
     // appMain
     appMainEventStart = objSyncBegin,
         appMainEventTimer,
+        // physics
+        appMainEventCreateWorld,
         // Win32
         appMainEventPlatformWin32CreateWindow,
         appMainEventPlatformWin32DestroyWindow,
         appMainEventPlatformWin32ResizeWindow,
+        // 2D Engine
+        appMainEventUpdateFrame,
     appMainEventEnd = 99,
     // appTest
     appRenderEventStart = 100,
         appRenderEventTimer,
-        appRenderEventOpenglInit,
-        appRenderEventOpenglDeinit,
-        appRenderEventOpenglSyncClear,
-        appRenderEventOpenglSyncSetClearColor,
-        appRenderEventOpenglSyncSetColor,
+        // Rendering Service
+        appRenderServiceRenderingInit,
+        appRenderServiceRenderingDeinit,
+        // OpenGL
         appRenderEventOpenglSyncUpdateViewport,
+        // 2D Engine
+        appRenderDrawFrame,
     appRenderEventEnd = 199,
 } appEventList;
 
@@ -56,10 +61,16 @@ typedef enum{
 #endif
 
 /* [SERVICE] */
-#define APP_SERVICE_RENDERING 1
+#define APP_SERVICE_RENDERING SERVICE_RENDERING_ENABLE
 #if APP_SERVICE_RENDERING
     #define APP_SERVICE_RENDERING_FPS 50
+    #define APP_SERVICE_RENDERING_RENDER_QUEUE_SIZE (1 * 1024)
 #endif
+
+/* [APP] */
+#define APP_WINDOW_NAME "engine2D"
+#define APP_WINDOW_WIDTH 600
+#define APP_WINDOW_HEIGHT 400
 
 /* [LOG] */
 #define APP_LOG_ENABLE SYSTEM_LOG_ENABLE
@@ -127,6 +138,5 @@ typedef enum{
     #define APP_SEMAPHORE_MAX_COUNT 2024
     #define APP_SEMAPHORE_TIMEOUT_MS 0
 #endif
-
 
 #endif

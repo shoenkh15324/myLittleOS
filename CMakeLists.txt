@@ -56,6 +56,7 @@ set(SRCS
     src/driver/gfx/opengl/driverOpengl.c
     # Service
     src/service/serviceCommon.c
+    src/service/rendering/serviceRendering.c
     # App
     src/app/appCommon.c
     src/app/engine2D/app.c
