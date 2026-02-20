@@ -132,7 +132,7 @@ int driverOpenglSync(uint16_t sync, uintptr_t arg1, uintptr_t arg2, uintptr_t ar
     int result = retOk;
     osalMutexLock(&_driverOpengl.objMutex, -1);
     switch(sync){
-        case driverOpenglSyncTimer: logDebug("driverOpenglSyncTimer");
+        case driverOpenglSyncTimer: //logDebug("driverOpenglSyncTimer");
             break;
         case driverOpenglSyncInit:
             if(_driverOpenglInit()){ logError("_driverOpenglInit fail");

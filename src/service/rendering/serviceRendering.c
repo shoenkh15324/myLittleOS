@@ -34,9 +34,8 @@ static void _serviceRenderingDrawCircle(const drawCircle2D* diagram){
     if(_serviceRenderingRequestPrimitiveDrawing(gfxPrimitiveTypeTriangles, (const float*)vertex, (vIdx / 2))){ logError("_serviceRenderingRequestPrimitiveDrawing fail"); }
 }
 static void _serviceRenderingDrawRect(const drawRect2D* diagram) {
-    float x = diagram->x; float y = diagram->y;
-    float w = diagram->width; float h = diagram->height;
-    float vertex[] = { // 삼각형 2개 (정점 6개)
+    float w = diagram->width, h = diagram->height, x = diagram->x - (w * 0.5f), y = diagram->y - (h * 0.5f);
+    float vertex[] = { 
         x, y, x + w, y + h, x, y + h, // 삼각형 1
         x, y, x + w, y, x + w, y + h  // 삼각형 2
     };
@@ -48,9 +47,7 @@ static void _serviceRenderingDrawLine(const drawLine2D* diagram) {
 }
 static int _serviceRenderingDrawDiagram(void){
     renderCmd cmd;
-    int count = 0;
     while(bufferPop(_serviceRendering.pReadBuf, (uint8_t*)&cmd, sizeof(cmd))){ 
-        count++;
         driverOpenglSync(driverOpenglSyncSetColor, (cmd.color >> 16) & 0xFF, (cmd.color >> 8) & 0xFF, cmd.color & 0xFF, 0);
         switch(cmd.type){
             case renderCmdTypeCircle:
@@ -64,7 +61,6 @@ static int _serviceRenderingDrawDiagram(void){
                 break;
         }
     }
-    if(count == 0){ logDebug("No commands in buffer"); }
     return retOk;
 }
 static int _serviceRenderingBeginFrame(void){
@@ -181,7 +177,7 @@ int serviceRenderingSync(uint16_t sync, uintptr_t arg1, uintptr_t arg2, uintptr_
     if(_serviceRendering.objState < objStateOpened){ logError("objState(%d) < objStateOpened", _serviceRendering.objState); return retFail; }
     int result = retOk;
     switch(sync){
-        case serviceRenderingSyncDrawFrame: logDebug("serviceRenderingSyncDrawFrame");
+        case serviceRenderingSyncDrawFrame: //logDebug("serviceRenderingSyncDrawFrame");
             if(_serviceRenderingDrawFrame()){ logError("_serviceRenderingDrawFrame fail");
                 return retFail;
             }

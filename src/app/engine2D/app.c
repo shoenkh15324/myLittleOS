@@ -71,16 +71,16 @@ static void _appMainEventHandler(void* arg1, void* arg2, void* arg3){
         case appMainEventCreateWorld:{ 
             _appMain.world = world2dCreate(pAsync->arg1, pAsync->arg2);
             if(!_appMain.world){ logError("world2dCreate fail"); goto appMainEventHandlerExit; }
-            // red circle
-            circle2d* shapeCircleRed = circle2dCreate(50.0f, NULL);
-            body2d* bodyCircleRed = body2dCreate((vector2d){150.0f, 200.0f}, 1.0f, (shape2d*)shapeCircleRed, 0, 0xFFFF0000);
-            body2dApplyImpulse(bodyCircleRed, (vector2d){10.0f, 0.0f});
-            // blue circle
-            circle2d* shapeCircleBlue = circle2dCreate(30.0f, NULL);
-            body2d* bodyCircleBlue = body2dCreate((vector2d){450.0f, 200.0f}, 1.0f, (shape2d*)shapeCircleBlue, 0, 0xFF0000FF);
-            body2dApplyImpulse(bodyCircleBlue, (vector2d){-10.0f, 0.0f});
-            if(world2dAddBody(_appMain.world, bodyCircleRed)){ logError("world2dAddBody fail"); goto appMainEventHandlerExit; }
-            if(world2dAddBody(_appMain.world, bodyCircleBlue)){ logError("world2dAddBody fail"); goto appMainEventHandlerExit; }
+            // red rect
+            aabb2d* shapeRectRed = aabb2dCreate(40.0f, 60.0f, NULL);
+            body2d* bodyRectRed = body2dCreate((vector2d){150.0f, 200.0f}, 1.0f, (shape2d*)shapeRectRed, 0, COLOR_RED);
+            body2dApplyImpulse(bodyRectRed, (vector2d){10.0f, 0.0f});
+            // blue rect
+            aabb2d* shapeRectBlue = aabb2dCreate(60.0f, 40.0f, NULL);
+            body2d* bodyRectBlue = body2dCreate((vector2d){450.0f, 200.0f}, 1.0f, (shape2d*)shapeRectBlue, 0, COLOR_BLUE);
+            body2dApplyImpulse(bodyRectBlue, (vector2d){-10.0f, 0.0f});
+            if(world2dAddBody(_appMain.world, bodyRectRed)){ logError("world2dAddBody fail"); goto appMainEventHandlerExit; }
+            if(world2dAddBody(_appMain.world, bodyRectBlue)){ logError("world2dAddBody fail"); goto appMainEventHandlerExit; }
             break;
         }
         // Win32
@@ -94,7 +94,7 @@ static void _appMainEventHandler(void* arg1, void* arg2, void* arg3){
             driverPlatformWin32Sync(driverPlatformWin32SyncResizeWindow, pAsync->arg1, pAsync->arg2, 0, 0);
             break;
         // 2D Engine
-        case appMainEventUpdateFrame: logDebug("appMainEventUpdateFrame");
+        case appMainEventUpdateFrame: //logDebug("appMainEventUpdateFrame");
             if(_appMainUpdateFrame()){ logError("_appMainUpdateFrame fail"); goto appMainEventHandlerExit; }
             break;
     }
