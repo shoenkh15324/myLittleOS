@@ -1,45 +1,32 @@
 #pragma once
 /******************************************************************************
  *  Author : Minkyu Kim
- *  Created: 2026-02-12
+ *  Created: 2026-02-20
  ******************************************************************************/
 #include "core/systemDefs.h"
 #include "driver/driverDefs.h"
 #include "service/serviceDefs.h"
 
-#if defined (APP_ENGINE_2D)
+#if defined (APP_EUCLID_ENGINE)
 
 typedef enum{
     // appMain
     appMainEventStart = objSyncBegin,
         appMainEventTimer,
-        // physics
-        appMainEventCreateWorld,
         // Win32
         appMainEventPlatformWin32CreateWindow,
         appMainEventPlatformWin32DestroyWindow,
         appMainEventPlatformWin32ResizeWindow,
-        // 2D Engine
-        appMainEventUpdateFrame,
-    appMainEventEnd = 99,
-    // appTest
-    appRenderEventStart = 100,
-        appRenderEventTimer,
-        // Rendering Service
-        appRenderServiceRendering2dInit,
-        appRenderServiceRendering2dDeinit,
         // OpenGL
-        appRenderEventOpenglSyncUpdateViewport,
-        // 2D Engine
-        appRenderDrawFrame,
-    appRenderEventEnd = 199,
+        appMainEventOpenglSyncUpdateViewport,
+    appMainEventEnd = 99,
 } appEventList;
 
 /* [INFO]*/
-#define APP_NAME "Engine 2D"
+#define APP_NAME "Euclid Engine"
 #define APP_AUTHOR "Minkyu Kim"
-#define APP_VERSION_MAJOR 1
-#define APP_VERSION_MINOR 0
+#define APP_VERSION_MAJOR 0
+#define APP_VERSION_MINOR 1
 #define APP_VERSION_PATCH 0
 
 /* [PLATFORM] */
@@ -52,7 +39,7 @@ typedef enum{
 #elif (APP_BOARD == BOARD_NONE) && (APP_OS == OS_WIN32)
     #define APP_DRIVER_PLATFORM DRIVER_PLATFORM_WIN32
     #if APP_DRIVER_PLATFORM == DRIVER_PLATFORM_WIN32
-        #define DRIVER_PLATFORM_WIN32_WINDOW_CLASS_NAME L"engine2dWindowClass"
+        #define DRIVER_PLATFORM_WIN32_WINDOW_CLASS_NAME L"euclidEngineWindowClass"
         #define DRIVER_PLATFORM_WIN32_WM_USER_RESIZE (WM_USER + 1)
     #endif
     #define APP_DRIVER_GFX DRIVER_GFX_OPENGL
@@ -61,14 +48,14 @@ typedef enum{
 #endif
 
 /* [SERVICE] */
-#define APP_SERVICE_RENDERING SERVICE_RENDERING_2D
+#define APP_SERVICE_RENDERING SERVICE_RENDERING_3D
 #if APP_SERVICE_RENDERING
-    #define APP_SERVICE_RENDERING_FPS 50
-    #define APP_SERVICE_RENDERING_RENDER_QUEUE_SIZE (1 * 1024)
+    #define APP_SERVICE_RENDERING_FPS 60
+    #define APP_SERVICE_RENDERING_RENDER_QUEUE_SIZE (1024 * 1024)
 #endif
 
 /* [APP] */
-#define APP_WINDOW_NAME "engine2D"
+#define APP_WINDOW_NAME "euclidEngine"
 #define APP_WINDOW_WIDTH 600
 #define APP_WINDOW_HEIGHT 400
 
@@ -87,11 +74,11 @@ typedef enum{
 // THREAD
 #define APP_THREAD SYSTEM_OSAL_THREAD_ENABLE
 #if APP_THREAD
-    #define APP_THREAD_MAX_COUNT 2
+    #define APP_THREAD_MAX_COUNT 1
     #if APP_THREAD_MAX_COUNT >= 1
         #define APP_MAIN_THREAD_STACK_SIZE (1024 * 1024)
         #define APP_MAIN_THREAD_EVENT_QUEUE_SIZE (128 * 1024)
-        #define APP_MAIN_THREAD_PAYLOAD_BUFFER_SIZE (1024)
+        #define APP_MAIN_THREAD_PAYLOAD_BUFFER_SIZE (4 * 1024)
         #if APP_THREAD_MAX_COUNT >= 2
             #define APP_RENDER_THREAD_STACK_SIZE (512 * 1024)
             #define APP_RENDER_THREAD_EVENT_QUEUE_SIZE (128 * 1024)
@@ -111,7 +98,7 @@ typedef enum{
 #if APP_THREAD && (APP_THREAD_MAX_COUNT > 1)
     #define APP_MEM SYSTEM_OSAL_DYNAMIC_MEM
 #else
-    #define APP_MEM SYSTEM_OSAL_STATIC_MEM
+    #define APP_MEM SYSTEM_OSAL_DYNAMIC_MEM
 #endif
 #if APP_MEM == SYSTEM_OSAL_STATIC_MEM
     #define APP_MEM_POOL_SIZE (1024 * 1024)

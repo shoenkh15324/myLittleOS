@@ -46,10 +46,10 @@ static void _appMainTimerHandler(void* arg){ //logDebug("_appMainTimerHandler");
 }
 static int _appMainUpdateFrame(void){
     world2dStep(_appMain.world, ((float)APP_SERVICE_RENDERING_FPS / 1000.0f));
-    if(serviceRenderingSync(serviceRenderingSyncSubmitWorld, (intptr_t)_appMain.world, 0, 0, 0)){ logError("serviceRenderingSyncSubmitWorld fail");
+    if(serviceRendering2dSync(serviceRendering2dSyncSubmitWorld, (intptr_t)_appMain.world, 0, 0, 0)){ logError("serviceRendering2dSyncSubmitWorld fail");
         return retFail;
     }
-    if(serviceRenderingSync(serviceRenderingSyncSwapBuffer, 0, 0, 0, 0)){ logError("serviceRenderingSyncSwapBuffer fail");
+    if(serviceRendering2dSync(serviceRendering2dSyncSwapBuffer, 0, 0, 0, 0)){ logError("serviceRendering2dSyncSwapBuffer fail");
         return retFail;
     }
     if(asyncPush(asyncTypeAsync, appRenderDrawFrame, 0, 0, 0, 0)){ logError("appRenderDrawFrame fail");
@@ -112,14 +112,14 @@ static void _appRenderEventHandler(void* arg1, void* arg2, void* arg3){
             serviceCommonSync(serviceCommonSyncTimer, 0, 0, 0, 0);
             break;
         // Rendering Service
-        case appRenderServiceRenderingInit:
-            serviceRenderingSync(serviceRenderingSyncInit, 0, 0, 0, 0);
+        case appRenderServiceRendering2dInit:
+            serviceRendering2dSync(serviceRendering2dSyncInit, 0, 0, 0, 0);
             break;
-        case appRenderServiceRenderingDeinit:
-            serviceRenderingSync(serviceRenderingSyncDeinit, 0, 0, 0, 0);
+        case appRenderServiceRendering2dDeinit:
+            serviceRendering2dSync(serviceRendering2dSyncDeinit, 0, 0, 0, 0);
             break;
         case appRenderDrawFrame:
-            serviceRenderingSync(serviceRenderingSyncDrawFrame, 0, 0, 0, 0);
+            serviceRendering2dSync(serviceRendering2dSyncDrawFrame, 0, 0, 0, 0);
             break;
         // OpenGL
         case appRenderEventOpenglSyncUpdateViewport:
@@ -151,7 +151,7 @@ int appOpen(void){
     if(asyncPush(asyncTypeAsync, appMainEventCreateWorld, 5, 10, 0, 0)){ logError("appMainEventCreateWorld fail");
         return retFail;
     }
-    if(asyncPush(asyncTypeAsync, appRenderServiceRenderingInit, 0, 0, 0, 0)){ logError("appRenderServiceRenderingInit fail");
+    if(asyncPush(asyncTypeAsync, appRenderServiceRendering2dInit, 0, 0, 0, 0)){ logError("appRenderServiceRendering2dInit fail");
         return retFail;
     }
 appOpenExit:

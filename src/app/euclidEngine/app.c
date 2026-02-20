@@ -1,0 +1,77 @@
+/******************************************************************************
+ *  Author : Minkyu Kim
+ *  Created: 2026-02-20
+ ******************************************************************************/
+#include "appCfgSelector.h"
+#include "app/appCommon.h"
+
+static void _appMainTimerHandler(void*);
+static void _appMainEventHandler(void*, void*, void*);
+
+static appMain _appMain = {
+    .actor.isMainThread = true,
+    .actor.objState = objStateClosed, 
+    .actor.eventQueueSize = APP_MAIN_THREAD_EVENT_QUEUE_SIZE,
+    .actor.appThreadAttr.name = "mario_main",
+    .actor.appThreadAttr.priority = osalThreadPriorityNormal,
+    .actor.appThreadAttr.statckSize = APP_MAIN_THREAD_STACK_SIZE,
+    .actor.appThreadHandler = _appMainEventHandler,
+    .actor.appTimerHandler = _appMainTimerHandler,
+    .actor.appEventIdxStart = appMainEventStart,
+    .actor.appEventIdxEnd = appMainEventEnd,
+    .actor.payloadBufferSize = APP_MAIN_THREAD_PAYLOAD_BUFFER_SIZE,
+};
+
+static void _appMainTimerHandler(void* arg){ //logDebug("_appMainTimerHandler");
+    activeObject* actor = (activeObject*)arg;
+    if(actor->isMainThread){
+        if(asyncPush(asyncTypeAsync, appMainEventTimer, 0, 0, 0, 0)){ logError("asyncPush fail"); }
+    }
+}
+static void _appMainEventHandler(void* arg1, void* arg2, void* arg3){
+    activeObject* actor = (activeObject*)arg1;
+    asyncPacket* pAsync = (asyncPacket*)arg2;
+    uint8_t* pPayload = (uint8_t*)arg3;
+    osalMutexLock(&actor->objMutex, -1);
+    switch(pAsync->eventId){
+        case appMainEventTimer: logDebug("appMainEventTimer");
+            driverCommonSync(driverCommonSyncTimer, 0, 0, 0, 0);
+            serviceCommonSync(serviceCommonSyncTimer, 0, 0, 0, 0);
+            break;
+        // Win32
+        case appMainEventPlatformWin32CreateWindow:
+            driverPlatformWin32Sync(driverPlatformWin32SyncCreateWindow, (uintptr_t)APP_WINDOW_NAME, APP_WINDOW_WIDTH, APP_WINDOW_HEIGHT, 0);
+            break;
+        case appMainEventPlatformWin32DestroyWindow:
+            driverPlatformWin32Sync(driverPlatformWin32SyncDestroyWindow, 0, 0, 0, 0);
+            break;
+        case appMainEventPlatformWin32ResizeWindow:
+            driverPlatformWin32Sync(driverPlatformWin32SyncResizeWindow, pAsync->arg1, pAsync->arg2, 0, 0);
+            break;
+        // OpenGl
+        case appMainEventOpenglSyncUpdateViewport:
+            driverOpenglSync(driverOpenglSyncUpdateViewport, pAsync->arg1, pAsync->arg2, 0, 0);
+            break;
+    }
+appMainEventHandlerExit:
+    osalMutexUnlock(&actor->objMutex);
+}
+int appClose(void){
+    if(activeClose(&_appMain.actor)){ logError("activeClose fail");
+        return retFail;
+    }
+    return retOk;
+}
+int appOpen(void){
+    if(activeOpen(&_appMain.actor)){ logError("activeOpen fail / %s", _appMain.actor.appThreadAttr.name);
+        return retFail;
+    }
+    if(asyncPush(asyncTypeAsync, appMainEventPlatformWin32CreateWindow, 0, 0, 0, 0)){logError("appMainEventPlatformWin32CreateWindow fail");
+        return retFail;
+    }
+appOpenExit:
+    return retOk;
+}
+int appSync(uint16_t, uintptr_t, uintptr_t, uintptr_t, uintptr_t){
+    return retOk;
+}

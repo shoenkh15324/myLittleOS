@@ -17,7 +17,11 @@ static LRESULT CALLBACK _driverPlatformWin32WindowProc(HWND hwnd, UINT msg, WPAR
             return 0;
         case WM_SIZE:
             asyncPush(asyncTypeAsync, appMainEventPlatformWin32ResizeWindow, LOWORD(lParam), HIWORD(lParam), 0 ,0);
+#if APP_ENGINE_2D
             asyncPush(asyncTypeAsync, appRenderEventOpenglSyncUpdateViewport, LOWORD(lParam), HIWORD(lParam), 0 ,0);
+#else
+            asyncPush(asyncTypeAsync, appMainEventOpenglSyncUpdateViewport, LOWORD(lParam), HIWORD(lParam), 0 ,0);
+#endif
             return 0;
         case WM_PAINT:
             PAINTSTRUCT ps;
@@ -88,7 +92,6 @@ int driverPlatformWin32Sync(uint16_t sync, uintptr_t arg1, uintptr_t arg2, uintp
             int height = rect.bottom - rect.top;
             wchar_t wideTitle[256];
             MultiByteToWideChar(CP_UTF8, 0, titleUtf8, -1, wideTitle, 256);
-            logDebug("Second char: %c", (char)wideTitle[1]);
             _driverPlatformWin32.hwnd = CreateWindowExW(0, DRIVER_PLATFORM_WIN32_WINDOW_CLASS_NAME, wideTitle, WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, width, height, NULL, NULL, GetModuleHandle(NULL), NULL);
             if(!_driverPlatformWin32.hwnd){ logError("CreateWindowExW fail");
                 result = retFail;

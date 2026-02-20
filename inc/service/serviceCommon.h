@@ -6,8 +6,10 @@
 #include "driver/driverCommon.h"
 #include "serviceDefs.h"
 
-#if APP_SERVICE_RENDERING == SERVICE_RENDERING_ENABLE
-    #include "service/rendering/serviceRendering.h"
+#if APP_SERVICE_RENDERING == SERVICE_RENDERING_2D
+    #include "service/rendering/serviceRendering2D.h"
+#else APP_SERVICE_RENDERING == SERVICE_RENDERING_3D
+    #include "service/rendering/serviceRendering3D.h"
 #endif
 
 enum{

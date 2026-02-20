@@ -3,7 +3,7 @@ project(myLittleOS LANGUAGES C CXX)
 
 # 1. 프로젝트 설정 (App Target)
 if(NOT DEFINED APP_TARGET)
-    set(APP_TARGET "engine_2d")
+    set(APP_TARGET "euclid_engine")
 endif()
 
 set(TARGET_NAME myLittleOS)
@@ -31,8 +31,8 @@ if(UNIX)
     endif()
 endif()
 
-# 4. 소스 파일 정의 (가독성을 위해 변수에 할당)
-set(SRCS
+# 4. 소스 파일 정의
+set(COMMON_SRCS
     main.c
     # Core
     src/core/system.c
@@ -41,28 +41,54 @@ set(SRCS
     src/core/feature/buffer.c
     src/core/feature/async.c
     src/core/feature/active.c
-    src/core/physics/vector/vector2D.c
-    src/core/physics/body/body2D.c
-    src/core/physics/shape/shape2D.c
-    src/core/physics/shape/circle2D.c
-    src/core/physics/shape/aabb2D.c
-    src/core/physics/contact/contact2D.c
-    src/core/physics/collision/collision2D.c
-    src/core/physics/solver/solver2D.c
-    src/core/physics/world/world2D.c
     # Driver
     src/driver/driverCommon.c
-    src/driver/platform/win32/driverPlatformWin32.c
-    src/driver/gfx/opengl/driverOpengl.c
     # Service
     src/service/serviceCommon.c
-    src/service/rendering/serviceRendering.c
     # App
     src/app/appCommon.c
-    src/app/engine2D/app.c
-    src/app/engine2D/appBridge.c
 )
-
+# 4-1. 타겟별 소스
+if(APP_TARGET STREQUAL "engine_2d")
+    set(APP_SRCS
+        # core
+        src/core/physics/vector/vector2D.c
+        src/core/physics/body/body2D.c
+        src/core/physics/shape/shape2D.c
+        src/core/physics/shape/circle2D.c
+        src/core/physics/shape/aabb2D.c
+        src/core/physics/contact/contact2D.c
+        src/core/physics/collision/collision2D.c
+        src/core/physics/solver/solver2D.c
+        src/core/physics/world/world2D.c
+        # driver
+        src/driver/platform/win32/driverPlatformWin32.c
+        src/driver/gfx/opengl/driverOpengl.c
+        # service
+        src/service/rendering/serviceRendering2D.c
+        # app
+        src/app/engine2D/app.c
+        src/app/engine2D/appBridge.c
+    )
+elseif(APP_TARGET STREQUAL "euclid_engine")
+    set(APP_SRCS
+        # driver
+        src/driver/platform/win32/driverPlatformWin32.c
+        src/driver/gfx/opengl/driverOpengl.c
+        # service
+        src/service/rendering/serviceRendering3D.c
+        # app
+        src/app/euclidEngine/app.c
+        src/app/euclidEngine/appBridge.c
+    )
+else()
+    message(FATAL_ERROR "Unknown APP_TARGET: ${APP_TARGET}")
+endif()
+# 4-2. 최종 소스 조합
+set(SRCS
+    ${COMMON_SRCS}
+    ${APP_SRCS}
+)
 # 5. 타겟 생성 및 설정
 add_executable(${TARGET_NAME} ${SRCS})
 

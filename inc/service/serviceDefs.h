@@ -37,5 +37,6 @@ typedef struct renderCmd{
     } diagram;
 } renderCmd;
 
-#define SERVICE_RENDERING_ENABLE 1
+#define SERVICE_RENDERING_2D 1
+#define SERVICE_RENDERING_3D 2
  

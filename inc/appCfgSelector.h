@@ -20,8 +20,8 @@
     #include "app/sample/appConfig.h"
 #elif defined(APP_ENGINE_2D)
     #include "app/engine2D/appConfig.h"
-#elif defined(APP_DEFAULT)
-    #include APP_DEFAULT
+#elif defined(APP_EUCLID_ENGINE)
+    #include "app/euclidEngine/appConfig.h"
 #else
     #include "app/sample/appConfig.h"
 #endif
