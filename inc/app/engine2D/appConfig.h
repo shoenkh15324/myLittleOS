@@ -38,8 +38,8 @@ typedef enum{
 /* [INFO]*/
 #define APP_NAME "Engine 2D"
 #define APP_AUTHOR "Minkyu Kim"
-#define APP_VERSION_MAJOR 0
-#define APP_VERSION_MINOR 1
+#define APP_VERSION_MAJOR 1
+#define APP_VERSION_MINOR 0
 #define APP_VERSION_PATCH 0
 
 /* [PLATFORM] */
