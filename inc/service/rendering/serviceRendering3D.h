@@ -6,7 +6,7 @@
 #include "core/feature/osal.h"
 
 enum{
-    serviceRendering3dSyncXXX = objSyncBegin,
+    serviceRendering3dSyncDrawFrame = objSyncBegin,
 };
 enum{
     serviceRendering3dStateXXX = objStateBegin,

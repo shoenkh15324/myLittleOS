@@ -34,10 +34,14 @@ static void _appMainEventHandler(void* arg1, void* arg2, void* arg3){
     uint8_t* pPayload = (uint8_t*)arg3;
     osalMutexLock(&actor->objMutex, -1);
     switch(pAsync->eventId){
-        case appMainEventTimer: logDebug("appMainEventTimer");
+        case appMainEventTimer:{ logDebug("appMainEventTimer");
             driverCommonSync(driverCommonSyncTimer, 0, 0, 0, 0);
             serviceCommonSync(serviceCommonSyncTimer, 0, 0, 0, 0);
+            // rendering loop
+            driverJoltSync(driverJoltSyncStep, 0, 0, 0, 0);
+            serviceRendering3dSync(serviceRendering3dSyncDrawFrame, 0 ,0, 0, 0);
             break;
+        }
         // Win32
         case appMainEventPlatformWin32CreateWindow:
             driverPlatformWin32Sync(driverPlatformWin32SyncCreateWindow, (uintptr_t)APP_WINDOW_NAME, APP_WINDOW_WIDTH, APP_WINDOW_HEIGHT, 0);

@@ -5,6 +5,10 @@
  ******************************************************************************/
 #include "core/systemDefs.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #if APP_LOG_ENABLE
     void _logInternal(int level, const char* func, int line, const char* fmt, ...);
     #if APP_LOG_LEVEL >= SYSTEM_LOG_LEVEL_ERROR
@@ -36,3 +40,7 @@
 
 int logOpen(void);
 int logClose(void);
+
+#ifdef __cplusplus
+}
+#endif

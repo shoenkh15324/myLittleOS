@@ -28,7 +28,7 @@ typedef enum{
 
 /* [GFX] */
 #define DRIVER_GFX_OPENGL 1
-#define DRIVER_GFX_BULLET 2
+#define DRIVER_GFX_BGFX 2
 
 /* [PHYSICS BACKEND] */
 #define DRIVER_PHYSICS_BACKEND_JOLT 1

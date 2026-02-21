@@ -38,7 +38,11 @@ int serviceRendering3dSync(uint16_t sync, uintptr_t arg1, uintptr_t arg2, uintpt
     int result = retOk;
     osalMutexLock(&_serviceRendering3d.objMutex, -1);
     switch(sync){
-        //
+        case serviceRendering3dSyncDrawFrame:{
+            float pos[3], rot[4];
+            driverJoltSync(driverJoltSyncGetBodyTransform, (uintptr_t)pos, (uintptr_t)rot, 0 ,0);
+            break;
+        }
     }
 syncExit:
     osalMutexUnlock(&_serviceRendering3d.objMutex);
