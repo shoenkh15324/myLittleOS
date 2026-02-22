@@ -73,6 +73,7 @@ if(APP_TARGET STREQUAL "engine_2d")
         src/app/engine2D/app.c
         src/app/engine2D/appBridge.c
     )
+    list(APPEND EXTERNAL_LIBS opengl32 gdi32 user32)
 elseif(APP_TARGET STREQUAL "euclid_engine")
     # jolt physic
     set(JOLT_ROOT_DIR "${EXTERNAL_DIR}/Jolt")
@@ -86,6 +87,7 @@ elseif(APP_TARGET STREQUAL "euclid_engine")
         # driver
         src/driver/platform/win32/driverPlatformWin32.c
         src/driver/gfx/bgfx/driverBgfx.c
+        src/driver/gfx/bgfx/driverBgfxBridge.cpp
         src/driver/physicsBackend/jolt/driverJolt.c
         src/driver/physicsBackend/jolt/driverJoltBridge.cpp
         # service
@@ -94,11 +96,6 @@ elseif(APP_TARGET STREQUAL "euclid_engine")
         src/app/euclidEngine/app.c
         src/app/euclidEngine/appBridge.c     
     )
-    find_library(LIB_BGFX NAMES bgfxRelease bgfx PATHS "${BGFX_ROOT_DIR}/lib")
-    find_library(LIB_BIMG NAMES bimgRelease bimg PATHS "${BGFX_ROOT_DIR}/lib")
-    find_library(LIB_BX NAMES bxRelease bx PATHS "${BGFX_ROOT_DIR}/lib")
-    list(APPEND EXTERNAL_LIBS ${LIB_BGFX} ${LIB_BIMG} ${LIB_BX})
-
     set(JOLT_DEFINITIONS # Jolt용 컴파일 정의 추가
         JPH_DEBUG 
         JPH_PROFILE 
@@ -108,10 +105,14 @@ elseif(APP_TARGET STREQUAL "euclid_engine")
         __STDC_FORMAT_MACROS
         BGFX_CONFIG_RENDERER_OPENGL=1
         BX_PLATFORM_WINDOWS=1
+        BX_CONFIG_DEBUG=0
     )
+    link_directories("${BGFX_ROOT_DIR}/lib")
+    list(APPEND EXTERNAL_LIBS bgfxRelease bimgRelease bxRelease gdi32 user32 psapi dxgi d3d11 d3d12 dwmapi stdc++)
     if(WIN32)
         list(APPEND JOLT_DEFINITIONS JPH_PLATFORM_WINDOWS)
     endif()
+    file(COPY "${CMAKE_SOURCE_DIR}/assets" DESTINATION "${CMAKE_BINARY_DIR}")
 else()
     message(FATAL_ERROR "Unknown APP_TARGET: ${APP_TARGET}")
 endif()
@@ -148,8 +149,4 @@ target_compile_definitions(${TARGET_NAME} PUBLIC
 )
 
 # 7. 라이브러리 링크
-if(WIN32)
-    list(APPEND EXTERNAL_LIBS opengl32 gdi32 user32 psapi)
-endif()
-
 target_link_libraries(${TARGET_NAME} PRIVATE ${EXTERNAL_LIBS})

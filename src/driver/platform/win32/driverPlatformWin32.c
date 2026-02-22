@@ -21,6 +21,7 @@ static LRESULT CALLBACK _driverPlatformWin32WindowProc(HWND hwnd, UINT msg, WPAR
             asyncPush(asyncTypeAsync, appRenderEventOpenglSyncUpdateViewport, LOWORD(lParam), HIWORD(lParam), 0 ,0);
 #elif APP_EUCLID_ENGINE
             // TODO
+            asyncPush(asyncTypeAsync, appMainEventBgfxUpdateViewport, LOWORD(lParam), HIWORD(lParam), 0 ,0);
 #endif
             return 0;
         case WM_PAINT:
@@ -54,7 +55,7 @@ int driverPlatformWin32Open(void){
     osalMutexLock(&_driverPlatformWin32.objMutex, -1);
     _driverPlatformWin32.objState = objStateOpening;
     //
-    // Enroll Window Clss
+    // Enroll Window Class
     WNDCLASSEXW wndClass = {
         .cbSize = sizeof(WNDCLASSEXW), 
         .lpfnWndProc = _driverPlatformWin32WindowProc, 
@@ -90,19 +91,23 @@ int driverPlatformWin32Sync(uint16_t sync, uintptr_t arg1, uintptr_t arg2, uintp
             AdjustWindowRectEx(&rect, WS_OVERLAPPEDWINDOW, FALSE, 0);
             int width  = rect.right - rect.left;
             int height = rect.bottom - rect.top;
+            _driverPlatformWin32.width = (int)arg2;
+            _driverPlatformWin32.height = (int)arg3;
             wchar_t wideTitle[256];
             MultiByteToWideChar(CP_UTF8, 0, titleUtf8, -1, wideTitle, 256);
-            _driverPlatformWin32.hwnd = CreateWindowExW(0, DRIVER_PLATFORM_WIN32_WINDOW_CLASS_NAME, wideTitle, WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, width, height, NULL, NULL, GetModuleHandle(NULL), NULL);
+            _driverPlatformWin32.hwnd = CreateWindowExW(0, DRIVER_PLATFORM_WIN32_WINDOW_CLASS_NAME, wideTitle, WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, _driverPlatformWin32.width, _driverPlatformWin32.height, NULL, NULL, GetModuleHandle(NULL), NULL);
             if(!_driverPlatformWin32.hwnd){ logError("CreateWindowExW fail");
                 result = retFail;
                 goto syncExit;
             }
+            break;
+        }
+        case driverPlatformWin32SyncShowWindow:
             ShowWindow(_driverPlatformWin32.hwnd, SW_SHOW);
             UpdateWindow(_driverPlatformWin32.hwnd);
             _driverPlatformWin32.hdc = GetDC(_driverPlatformWin32.hwnd);
             _driverPlatformWin32.running = 1;
             break;
-        }
         case driverPlatformWin32SyncResizeWindow:
             if(!arg1 || !arg2){ logError("Invalid Params");
                 result = retFail; goto syncExit;
@@ -125,13 +130,20 @@ int driverPlatformWin32Sync(uint16_t sync, uintptr_t arg1, uintptr_t arg2, uintp
             *(HWND*)arg1 = _driverPlatformWin32.hwnd;
             *(HDC*)arg2 = _driverPlatformWin32.hdc;
             break;
-        case driverPlatformWin32SyncGetClientSize:
+        case driverPlatformWin32SyncGetClientSize:{
             if(!arg1 || !arg2){ logError("Invalid Params");
                 result = retFail; goto syncExit;
+            }
+            if(_driverPlatformWin32.width <= 0 || _driverPlatformWin32.height <= 0){
+                RECT rc;
+                GetClientRect(_driverPlatformWin32.hwnd, &rc);
+                _driverPlatformWin32.width = rc.right - rc.left;
+                _driverPlatformWin32.height = rc.bottom - rc.top;
             }
             *(int*)arg1 = _driverPlatformWin32.width;
             *(int*)arg2 = _driverPlatformWin32.height;
             break;
+        }
     }
 syncExit:
     osalMutexUnlock(&_driverPlatformWin32.objMutex);

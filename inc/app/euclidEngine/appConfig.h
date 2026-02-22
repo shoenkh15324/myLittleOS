@@ -16,7 +16,11 @@ typedef enum{
         // Win32
         appMainEventPlatformWin32CreateWindow,
         appMainEventPlatformWin32DestroyWindow,
+        appMainEventPlatformWin32ShowWindow,
         appMainEventPlatformWin32ResizeWindow,
+        // Bgfx
+        appMainEventBgfxInit,
+        appMainEventBgfxUpdateViewport,
     appMainEventEnd = 99,
 } appEventList;
 

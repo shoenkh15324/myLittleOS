@@ -40,7 +40,7 @@ int driverJoltOpen(void){
     _driverJolt.objState = objStateOpened;
 openExit:
     osalMutexUnlock(&_driverJolt.objMutex);
-    _driverJolt.bodyIds[_driverJolt.bodyIdIdx++] = joltCreateFloor(_driverJolt.joltCtx, 100.0f, 1.0f, 100.0f, 0.0f, -1.0f, 0.0f);
+    _driverJolt.bodyIds[_driverJolt.bodyIdIdx++] = joltCreateFloor(_driverJolt.joltCtx, 0.0f, -1.0f, 0.0f, 100.0f, 1.0f, 100.0f);
     _driverJolt.bodyIds[_driverJolt.bodyIdIdx++] = joltCreateSphere(_driverJolt.joltCtx, 0.0f, 2.0f, 0.0f, 0.5f, true);
     return result;
 }

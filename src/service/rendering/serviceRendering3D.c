@@ -41,6 +41,7 @@ int serviceRendering3dSync(uint16_t sync, uintptr_t arg1, uintptr_t arg2, uintpt
         case serviceRendering3dSyncDrawFrame:{
             float pos[3], rot[4];
             driverJoltSync(driverJoltSyncGetBodyTransform, (uintptr_t)pos, (uintptr_t)rot, 0 ,0);
+            driverBgfxSync(driverBgfxSyncRenderFrame, (uintptr_t)pos, (uintptr_t)rot, 0, 0);
             break;
         }
     }

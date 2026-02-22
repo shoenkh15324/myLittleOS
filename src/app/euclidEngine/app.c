@@ -34,7 +34,7 @@ static void _appMainEventHandler(void* arg1, void* arg2, void* arg3){
     uint8_t* pPayload = (uint8_t*)arg3;
     osalMutexLock(&actor->objMutex, -1);
     switch(pAsync->eventId){
-        case appMainEventTimer:{ logDebug("appMainEventTimer");
+        case appMainEventTimer:{ //logDebug("appMainEventTimer");
             driverCommonSync(driverCommonSyncTimer, 0, 0, 0, 0);
             serviceCommonSync(serviceCommonSyncTimer, 0, 0, 0, 0);
             // rendering loop
@@ -49,8 +49,18 @@ static void _appMainEventHandler(void* arg1, void* arg2, void* arg3){
         case appMainEventPlatformWin32DestroyWindow:
             driverPlatformWin32Sync(driverPlatformWin32SyncDestroyWindow, 0, 0, 0, 0);
             break;
+        case appMainEventPlatformWin32ShowWindow:
+            driverPlatformWin32Sync(driverPlatformWin32SyncShowWindow, 0, 0, 0, 0);
+            break;
         case appMainEventPlatformWin32ResizeWindow:
             driverPlatformWin32Sync(driverPlatformWin32SyncResizeWindow, pAsync->arg1, pAsync->arg2, 0, 0);
+            break;
+        // Bgfx
+        case appMainEventBgfxInit:
+            driverBgfxSync(driverBgfxSyncInit, 0, 0, 0, 0);
+            break;
+        case appMainEventBgfxUpdateViewport:
+            driverBgfxSync(driverBgfxSyncUpdateViewport, pAsync->arg1, pAsync->arg2, 0, 0);
             break;
     }
 appMainEventHandlerExit:
@@ -67,6 +77,12 @@ int appOpen(void){
         return retFail;
     }
     if(asyncPush(asyncTypeAsync, appMainEventPlatformWin32CreateWindow, 0, 0, 0, 0)){logError("appMainEventPlatformWin32CreateWindow fail");
+        return retFail;
+    }
+    if(asyncPush(asyncTypeAsync, appMainEventBgfxInit, 0, 0, 0, 0)){logError("appMainEventBgfxInit fail");
+        return retFail;
+    }
+    if(asyncPush(asyncTypeAsync, appMainEventPlatformWin32ShowWindow, 0, 0, 0, 0)){logError("appMainEventPlatformWin32ShowWindow fail");
         return retFail;
     }
 appOpenExit:

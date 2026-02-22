@@ -18,6 +18,7 @@
     #include "driver/gfx/opengl/driverOpengl.h"
 #elif APP_DRIVER_GFX == DRIVER_GFX_BGFX
     #include "driver/gfx/bgfx/driverBgfx.h"
+    #include "driver/gfx/bgfx/driverBgfxBridge.h"
 #endif
 #if APP_DRIVER_PHYSICS_BACKEND == DRIVER_PHYSICS_BACKEND_JOLT
     #include "driver/physicsBackend/jolt/driverJolt.h"

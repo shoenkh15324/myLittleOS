@@ -8,6 +8,7 @@
 enum{
     driverPlatformWin32SyncTimer = objSyncBegin,
     driverPlatformWin32SyncCreateWindow,
+    driverPlatformWin32SyncShowWindow,
     driverPlatformWin32SyncResizeWindow,
     driverPlatformWin32SyncDestroyWindow,
     driverPlatformWin32SyncGetNativeHandle,

@@ -20,8 +20,8 @@ int driverCommonOpen(void){
     if(driverPlatformWin32Open()){ logError("driverPlatformWin32Open fail"); return -1; }
     if(driverOpenglOpen()){ logError("driverOpenglOpen fail"); return -1; }
 #elif APP_EUCLID_ENGINE
-    if(driverJoltOpen()){ logError("driverJoltOpen fail"); return -1; }
     if(driverPlatformWin32Open()){ logError("driverPlatformWin32Open fail"); return -1; }
+    if(driverJoltOpen()){ logError("driverJoltOpen fail"); return -1; }
     if(driverBgfxOpen()){ logError("driverBgfxOpen fail"); return -1; }
 #endif
     return 0;

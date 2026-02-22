@@ -133,7 +133,7 @@ int joltDeinit(joltContext* joltCtx){
     return retOk;
 }
 unsigned int joltCreateFloor(joltContext* joltCtx, float px, float py, float pz, float w, float h, float d){
-    if(!joltCtx){ logError("Invalid Params"); return 0; }
+    if(!joltCtx || w <= 0 || h <= 0 || d <= 0){ logError("Invalid Params"); return 0; }
     BodyInterface &bodyInterface = joltCtx->physicsSystem->GetBodyInterface();
     BoxShapeSettings floorShapeSettings(Vec3(w * 0.5f, h * 0.5f, d * 0.5f));
     BodyCreationSettings floorSettings(
@@ -159,7 +159,7 @@ unsigned int joltCreateSphere(joltContext* joltCtx, float x, float y, float z, f
     ObjectLayer layer = isDynamic ? Layers::MOVING : Layers::NON_MOVING;
     BodyCreationSettings sphereSettings(result.Get(), RVec3(x, y, z), Quat::sIdentity(), motionType, layer);
     BodyID sphereId = bodyInterface.CreateAndAddBody(sphereSettings, EActivation::Activate);
-    if(isDynamic){ bodyInterface.SetLinearVelocity(sphereId, Vec3(0.0f, -5.0f, 0.0f)); }
+    if(isDynamic){ bodyInterface.SetLinearVelocity(sphereId, Vec3(0.0f, -0.1f, 0.0f)); }
     return (unsigned int)sphereId.GetIndexAndSequenceNumber();
 }
 void joltStep(joltContext* joltCtx, float deltaTime, int collisionSteps){
