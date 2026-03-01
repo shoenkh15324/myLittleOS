@@ -9,7 +9,7 @@ int serviceCommonClose(void){
     if(serviceRendering2dClose()){ logError("serviceRendering2dClose fail");
         return retFail;
     }
-#else APP_EUCLID_ENGINE
+#else APP_BLACKHOLE_SIMULATION
     if(serviceRendering3dClose()){ logError("serviceRendering3dClose fail");
         return retFail;
     }
@@ -21,7 +21,7 @@ int serviceCommonOpen(void){
     if(serviceRendering2dOpen()){ logError("serviceRendering2dOpen fail");
         return retFail;
     }
-#else APP_EUCLID_ENGINE
+#else APP_BLACKHOLE_SIMULATION
     if(serviceRendering3dOpen()){ logError("serviceRendering3dOpen fail");
         return retFail;
     }

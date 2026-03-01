@@ -13,7 +13,7 @@ static serviceRendering2d _serviceRendering2d = {
     .objState = objStateClosed,
 };
 
-static int _serviceRendering2dRequestPrimitiveDrawing(gfxPrimitiveType type, const float* vertex, int vertexCount){
+static int _serviceRendering2dRequestPrimitiveDrawing(driverOpenglPrimitiveType type, const float* vertex, int vertexCount){
 #if APP_DRIVER_GFX == DRIVER_GFX_OPENGL
     driverOpenglSync(driverOpenglSyncDrawPrimitive, type, (uintptr_t)vertex, vertexCount, 0);
 #endif

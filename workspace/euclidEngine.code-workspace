@@ -23,7 +23,7 @@
         "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
         "C_Cpp.default.defines": [
             "MY_LITTLE_OS=1",
-            "APP_EUCLID_ENGINE=1",
+            "APP_BLACKHOLE_SIMULATION=1",
         ],
         "cmake.buildDirectory": "${workspaceFolder}/build",
     },

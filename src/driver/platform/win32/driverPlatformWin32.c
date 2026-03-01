@@ -19,7 +19,7 @@ static LRESULT CALLBACK _driverPlatformWin32WindowProc(HWND hwnd, UINT msg, WPAR
             asyncPush(asyncTypeAsync, appMainEventPlatformWin32ResizeWindow, LOWORD(lParam), HIWORD(lParam), 0 ,0);
 #if APP_ENGINE_2D
             asyncPush(asyncTypeAsync, appRenderEventOpenglSyncUpdateViewport, LOWORD(lParam), HIWORD(lParam), 0 ,0);
-#elif APP_EUCLID_ENGINE
+#elif APP_BLACKHOLE_SIMULATION
             // TODO
             asyncPush(asyncTypeAsync, appMainEventBgfxUpdateViewport, LOWORD(lParam), HIWORD(lParam), 0 ,0);
 #endif

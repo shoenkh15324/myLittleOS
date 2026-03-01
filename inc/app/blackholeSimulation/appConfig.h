@@ -7,7 +7,7 @@
 #include "driver/driverDefs.h"
 #include "service/serviceDefs.h"
 
-#if defined (APP_EUCLID_ENGINE)
+#if defined (APP_BLACKHOLE_SIMULATION)
 
 typedef enum{
     // appMain
@@ -21,6 +21,8 @@ typedef enum{
         // Bgfx
         appMainEventBgfxInit,
         appMainEventBgfxUpdateViewport,
+        // Rendering Service,
+        appMainEventServiceRenderingCreateEntity,
     appMainEventEnd = 99,
 } appEventList;
 
@@ -67,7 +69,7 @@ typedef enum{
 #endif
 
 /* [APP] */
-#define APP_WINDOW_NAME "euclidEngine"
+#define APP_WINDOW_NAME "blackholeSimulation"
 #define APP_WINDOW_WIDTH 600
 #define APP_WINDOW_HEIGHT 400
 

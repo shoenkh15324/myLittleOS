@@ -38,7 +38,6 @@ static void _appMainEventHandler(void* arg1, void* arg2, void* arg3){
             driverCommonSync(driverCommonSyncTimer, 0, 0, 0, 0);
             serviceCommonSync(serviceCommonSyncTimer, 0, 0, 0, 0);
             // rendering loop
-            driverJoltSync(driverJoltSyncStep, 0, 0, 0, 0);
             serviceRendering3dSync(serviceRendering3dSyncDrawFrame, 0 ,0, 0, 0);
             break;
         }
@@ -61,6 +60,10 @@ static void _appMainEventHandler(void* arg1, void* arg2, void* arg3){
             break;
         case appMainEventBgfxUpdateViewport:
             driverBgfxSync(driverBgfxSyncUpdateViewport, pAsync->arg1, pAsync->arg2, 0, 0);
+            break;
+        //
+        case appMainEventServiceRenderingCreateEntity:
+            serviceRendering3dSync(serviceRendering3dSyncCreateEntity, pAsync->arg1, pAsync->arg2, pAsync->arg3, 0);
             break;
     }
 appMainEventHandlerExit:
@@ -85,6 +88,17 @@ int appOpen(void){
     if(asyncPush(asyncTypeAsync, appMainEventPlatformWin32ShowWindow, 0, 0, 0, 0)){logError("appMainEventPlatformWin32ShowWindow fail");
         return retFail;
     }
+#if 1
+    float position[3] = {0.0f, 0.0f, 0.0f};
+    float rotation[4] = {0.0f, 0.0f, 0.0f, 1.0f};
+    if(asyncPush(asyncTypeAsync, appMainEventServiceRenderingCreateEntity, serviceRendering3dRenderTypeBlackhole, position, rotation, 0)){logError("appMainEventPlatformWin32ShowWindow fail");
+        return retFail;
+    }
+    float position1[3] = {0.0f, 0.0f, 1.0f};
+    if(asyncPush(asyncTypeAsync, appMainEventServiceRenderingCreateEntity, serviceRendering3dRenderTypeAccretionDisk, position1, rotation, 0)){logError("appMainEventPlatformWin32ShowWindow fail");
+        return retFail;
+    }
+#endif
 appOpenExit:
     return retOk;
 }

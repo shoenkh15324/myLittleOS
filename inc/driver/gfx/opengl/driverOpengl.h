@@ -20,6 +20,11 @@ enum{
 enum{
     driverOpenglStateXXX = objStateBegin,
 };
+typedef enum{
+    gfxPrimitiveTypePoints = 0,
+    gfxPrimitiveTypeLines,
+    gfxPrimitiveTypeTriangles,
+} gfxPrimitiveType;
 
 typedef struct driverOpengl{
     objectState objState;

@@ -8,7 +8,7 @@ int driverCommonClose(void){
 #if APP_ENGINE_2D
     if(driverOpenglClose()){ logError("driverOpenglClose fail"); return -1; }
     if(driverPlatformWin32Close()){ logError("driverPlatformWin32Close fail"); return -1; }
-#elif APP_EUCLID_ENGINE
+#elif APP_BLACKHOLE_SIMULATION
     if(driverJoltClose()){ logError("driverJoltClose fail"); return -1; }
     if(driverBgfxClose()){ logError("driverBgfxClose fail"); return -1; }
     if(driverPlatformWin32Close()){ logError("driverPlatformWin32Close fail"); return -1; }
@@ -19,7 +19,7 @@ int driverCommonOpen(void){
 #if APP_ENGINE_2D
     if(driverPlatformWin32Open()){ logError("driverPlatformWin32Open fail"); return -1; }
     if(driverOpenglOpen()){ logError("driverOpenglOpen fail"); return -1; }
-#elif APP_EUCLID_ENGINE
+#elif APP_BLACKHOLE_SIMULATION
     if(driverPlatformWin32Open()){ logError("driverPlatformWin32Open fail"); return -1; }
     if(driverJoltOpen()){ logError("driverJoltOpen fail"); return -1; }
     if(driverBgfxOpen()){ logError("driverBgfxOpen fail"); return -1; }

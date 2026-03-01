@@ -10,8 +10,8 @@
     #include "app/sample/app.h"
 #elif defined (APP_ENGINE_2D)
     #include "app/engine2D/app.h"
-#elif defined (APP_EUCLID_ENGINE)
-    #include "app/euclidEngine/app.h"
+#elif defined (APP_BLACKHOLE_SIMULATION)
+    #include "app/blackholeSimulation/app.h"
 #endif
 
 int appCommonClose(void);

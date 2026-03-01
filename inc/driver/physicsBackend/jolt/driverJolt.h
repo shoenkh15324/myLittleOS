@@ -9,11 +9,21 @@
 enum{
     driverJoltSyncStep = objSyncBegin,
     driverJoltSyncGetBodyTransform,
+    driverJoltSyncCreateBody,
 };
 enum{
     driverJoltStateXXX = objStateBegin,
 };
+typedef enum{
+    driverJoltBodyTypeSphere,
+    driverJoltBodyTypeDisk,
+} driverJoltBodyType;
 
+typedef struct{
+    driverJoltBodyType bodyType;
+    float position[3], rotation[4], radius, mass, friction, restitution;
+    bool isDynamic;
+} driverJoltBodyConfig;
 typedef struct driverJolt{
     objectState objState;
     osalMutex objMutex;

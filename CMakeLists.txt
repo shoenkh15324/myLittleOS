@@ -6,7 +6,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # 1. 프로젝트 설정 (App Target)
 if(NOT DEFINED APP_TARGET)
-    set(APP_TARGET "euclid_engine")
+    set(APP_TARGET "blackhole_simulation")
 endif()
 
 set(TARGET_NAME myLittleOS)
@@ -74,16 +74,17 @@ if(APP_TARGET STREQUAL "engine_2d")
         src/app/engine2D/appBridge.c
     )
     list(APPEND EXTERNAL_LIBS opengl32 gdi32 user32)
-elseif(APP_TARGET STREQUAL "euclid_engine")
+elseif(APP_TARGET STREQUAL "blackhole_simulation")
     # jolt physic
     set(JOLT_ROOT_DIR "${EXTERNAL_DIR}/Jolt")
     file(GLOB_RECURSE JOLT_SRCS "${JOLT_ROOT_DIR}/*.cpp")
     # bgfx
     set(BGFX_ROOT_DIR ${EXTERNAL_DIR}/bgfx)
+    # par
+    set(PAR_ROOT_DIR ${EXTERNAL_DIR}/par)
     # myLittleOS
     set(APP_SRCS
         ${JOLT_SRCS}
-        ${BGFX_SRCS}
         # driver
         src/driver/platform/win32/driverPlatformWin32.c
         src/driver/gfx/bgfx/driverBgfx.c
@@ -93,8 +94,8 @@ elseif(APP_TARGET STREQUAL "euclid_engine")
         # service
         src/service/rendering/serviceRendering3D.c
         # app
-        src/app/euclidEngine/app.c
-        src/app/euclidEngine/appBridge.c     
+        src/app/blackholeSimulation/app.c
+        src/app/blackholeSimulation/appBridge.c     
     )
     set(JOLT_DEFINITIONS # Jolt용 컴파일 정의 추가
         JPH_DEBUG 
@@ -106,6 +107,7 @@ elseif(APP_TARGET STREQUAL "euclid_engine")
         BGFX_CONFIG_RENDERER_OPENGL=1
         BX_PLATFORM_WINDOWS=1
         BX_CONFIG_DEBUG=0
+        PAR_SHAPES_IMPLEMENTATION=1
     )
     link_directories("${BGFX_ROOT_DIR}/lib")
     list(APPEND EXTERNAL_LIBS bgfxRelease bimgRelease bxRelease gdi32 user32 psapi dxgi d3d11 d3d12 dwmapi stdc++)
@@ -119,17 +121,18 @@ endif()
 # 5. 타겟 생성 및 설정
 set(SRCS ${COMMON_SRCS} ${APP_SRCS})
 add_executable(${TARGET_NAME} ${SRCS})
-if(APP_TARGET STREQUAL "euclid_engine")
+if(APP_TARGET STREQUAL "blackhole_simulation")
     target_precompile_headers(${TARGET_NAME} PRIVATE  # Jolt/Jolt.h를 미리 컴파일하여 빌드 속도를 비약적으로 향상.
         "$<$<COMPILE_LANGUAGE:CXX>:Jolt/Jolt.h>"
     )
 endif()
 # 6. 인클루드 경로 설정
 target_include_directories(${TARGET_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/inc)
-if(APP_TARGET STREQUAL "euclid_engine")
+if(APP_TARGET STREQUAL "blackhole_simulation")
     target_include_directories(${TARGET_NAME} PRIVATE 
         "${EXTERNAL_DIR}"
         "${BGFX_ROOT_DIR}/include"
+        "${PAR_ROOT_DIR}"
     )
     if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
         target_compile_options(${TARGET_NAME} PRIVATE -fpermissive)

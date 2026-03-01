@@ -14,7 +14,7 @@ static driverOpengl _driverOpengl = {
     .currColor = {1.0f, 1.0f, 1.0f},
 };
 
-static GLenum _convertPrimitive(gfxPrimitiveType type){
+static GLenum _convertPrimitive(driverOpenglPrimitiveType type){
     switch(type){
         case gfxPrimitiveTypePoints:
             return GL_POINTS;
@@ -33,7 +33,7 @@ static void _driverOpenglUpdateViewport(int width, int height){
     glOrtho(0, width, height, 0, -1, 1);  // 좌상단 (0,0)
     glMatrixMode(GL_MODELVIEW);
 }
-static void _driverOpenglDrawPrimitive(gfxPrimitiveType type, const float* vertices, int vertexCount){
+static void _driverOpenglDrawPrimitive(driverOpenglPrimitiveType type, const float* vertices, int vertexCount){
     if(vertices == NULL || vertexCount <= 0){ logError("Invliad Params"); return; }
     glColor3f(_driverOpengl.currColor[0], _driverOpengl.currColor[1], _driverOpengl.currColor[2]);
     GLenum mode = _convertPrimitive(type);
@@ -154,7 +154,7 @@ int driverOpenglSync(uint16_t sync, uintptr_t arg1, uintptr_t arg2, uintptr_t ar
             if(!arg2 || !arg3){ logError("Invalid Params");
                 result = retFail; goto syncExit;
             }
-            _driverOpenglDrawPrimitive((gfxPrimitiveType)arg1, (const float*)arg2, (int)arg3);
+            _driverOpenglDrawPrimitive((driverOpenglPrimitiveType)arg1, (const float*)arg2, (int)arg3);
             break;
         case driverOpenglSyncClear:
             glClear(GL_COLOR_BUFFER_BIT);

@@ -13,6 +13,7 @@
 #include <Jolt/Physics/PhysicsSystem.h>
 #include <Jolt/Physics/Collision/Shape/BoxShape.h>
 #include <Jolt/Physics/Collision/Shape/SphereShape.h>
+#include <Jolt/Physics/Collision/Shape/CylinderShape.h>
 #include <Jolt/Physics/Body/BodyCreationSettings.h>
 #include <Jolt/Physics/Body/BodyActivationListener.h>
 
@@ -153,14 +154,29 @@ unsigned int joltCreateSphere(joltContext* joltCtx, float x, float y, float z, f
     SphereShapeSettings shapeSettings(radius);
     ShapeSettings::ShapeResult result = shapeSettings.Create();
     if(result.HasError()){ logError("Shape Creation Failed: %s", result.GetError().c_str());
-        return retFail;
+        return 0;
     }
     EMotionType motionType = isDynamic ? EMotionType::Dynamic : EMotionType::Static;
     ObjectLayer layer = isDynamic ? Layers::MOVING : Layers::NON_MOVING;
     BodyCreationSettings sphereSettings(result.Get(), RVec3(x, y, z), Quat::sIdentity(), motionType, layer);
     BodyID sphereId = bodyInterface.CreateAndAddBody(sphereSettings, EActivation::Activate);
-    if(isDynamic){ bodyInterface.SetLinearVelocity(sphereId, Vec3(0.0f, -0.1f, 0.0f)); }
     return (unsigned int)sphereId.GetIndexAndSequenceNumber();
+}
+unsigned int joltCreateDisk(joltContext* joltCtx, float x, float y, float z, float radius, int isDynamic){
+    if(!joltCtx){ logError("Invalid Params"); return 0; }
+    BodyInterface &bodyInterface = joltCtx->physicsSystem->GetBodyInterface();
+    float halfHeight = 0.05f;
+    CylinderShapeSettings shapeSettings(halfHeight, radius);
+    ShapeSettings::ShapeResult result = shapeSettings.Create();
+    if(result.HasError()){ logError("Disk Shape Creation Failed: %s", result.GetError().c_str()); 
+        return 0;
+    }
+    EMotionType motionType = isDynamic ? EMotionType::Dynamic : EMotionType::Static;
+    ObjectLayer layer = isDynamic ? Layers::MOVING : Layers::NON_MOVING;
+    BodyCreationSettings diskSettings(result.Get(), RVec3(x, y, z), Quat::sIdentity(), motionType, layer);
+    BodyID diskId = bodyInterface.CreateAndAddBody(diskSettings, EActivation::Activate);
+    if(diskId.IsInvalid()){ logError("Failed to create Disk BodyID"); return 0; }
+    return (unsigned int)diskId.GetIndexAndSequenceNumber();
 }
 void joltStep(joltContext* joltCtx, float deltaTime, int collisionSteps){
     if(!joltCtx){ logError("Invalid Params"); return; }
@@ -174,9 +190,10 @@ void joltPrintBodyPosition(joltContext* joltCtx, unsigned int bodyId){
     logDebug("Body ID [%u] Position: x=%.2f, y=%.2f, z=%.2f", bodyId, (float)pos.GetX(), (float)pos.GetY(), (float)pos.GetZ());
 }
 void joltGetBodyTransform(joltContext* joltCtx, unsigned int bodyId, float* outPos, float* outRot){
-    if(!joltCtx){ logError("Invalid Params"); return; }
+    if(!joltCtx || bodyId == 0){ logError("Invalid Params"); return; }
     BodyInterface &bodyInterface = joltCtx->physicsSystem->GetBodyInterface();
     BodyID id(bodyId);
+    if(id.IsInvalid()) return;
     RVec3 pos = bodyInterface.GetPosition(id);
     outPos[0] = (float)pos.GetX();
     outPos[1] = (float)pos.GetY();
