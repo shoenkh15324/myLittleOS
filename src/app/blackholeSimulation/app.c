@@ -106,8 +106,7 @@ int appOpen(void){
     if(asyncPush(asyncTypeAsync, appMainEventServiceRenderingCreateEntity, serviceRendering3dRenderTypeBlackhole, position, rotation, 0)){logError("appMainEventPlatformWin32ShowWindow fail");
         return retFail;
     }
-    float position1[3] = {0.0f, 0.0f, 1.0f};
-    if(asyncPush(asyncTypeAsync, appMainEventServiceRenderingCreateEntity, serviceRendering3dRenderTypeAccretionDisk, position1, rotation, 0)){logError("appMainEventPlatformWin32ShowWindow fail");
+    if(asyncPush(asyncTypeAsync, appMainEventServiceRenderingCreateEntity, serviceRendering3dRenderTypeAccretionDisk, position, rotation, 0)){logError("appMainEventPlatformWin32ShowWindow fail");
         return retFail;
     }
 #endif

@@ -28,11 +28,11 @@ static void _serviceRendering3dUpdateCamera(void){
         _serviceRendering3d.camera.accumulatedMouseDx = 0.0f;
         _serviceRendering3d.camera.accumulatedMouseDy = 0.0f;
     }
-    if (_serviceRendering3d.camera.accumulatedMouseWheel != 0.0f) {
+    if(_serviceRendering3d.camera.accumulatedMouseWheel != 0.0f){
         float wheelDelta = _serviceRendering3d.camera.accumulatedMouseWheel;
         _serviceRendering3d.camera.fov -= wheelDelta * APP_SERVICE_RENDERING_MOUSE_WHEEL_SENSITIVITY;
-        if (_serviceRendering3d.camera.fov < 1.0f)   _serviceRendering3d.camera.fov = 1.0f;
-        if (_serviceRendering3d.camera.fov > 120.0f) _serviceRendering3d.camera.fov = 120.0f;
+        if(_serviceRendering3d.camera.fov < 1.0f) _serviceRendering3d.camera.fov = 1.0f;
+        if(_serviceRendering3d.camera.fov > 120.0f) _serviceRendering3d.camera.fov = 120.0f;
         _serviceRendering3d.camera.accumulatedMouseWheel = 0.0f;
     }
 }
@@ -108,6 +108,8 @@ int serviceRendering3dSync(uint16_t sync, uintptr_t arg1, uintptr_t arg2, uintpt
                 result = retFail; goto syncExit;
             }
             serviceRendering3dEntity* ent = &_serviceRendering3d.entities[_serviceRendering3d.entitiyCount];
+            memset(&ent->renderInfo, 0, sizeof(ent->renderInfo));
+            ent->renderInfo.trans.scale = 1.0f; // 매우 중요!
             serviceRendering3dRenderType renderType = (serviceRendering3dRenderType)arg1;
             float* startPos = (float*)arg2;
             float* startRot = (float*)arg3;
@@ -117,23 +119,32 @@ int serviceRendering3dSync(uint16_t sync, uintptr_t arg1, uintptr_t arg2, uintpt
 #if APP_BLACKHOLE_SIMULATION
                 case serviceRendering3dRenderTypeBlackhole:
                     meshConfig.meshType = driverBgfxMeshTypeSphere;
-                    meshConfig.abgr = 0xFF00FF00;
-                    meshConfig.segment = 5,
-                    meshConfig.sphere.radius = 1.0f;
-                    ent->renderInfo.trans.scale = 1.0f;
+                    meshConfig.segment = 5;
+                    meshConfig.sphere.radius = bodyConfig.radius = 5.0f;
+                    ent->renderInfo.trans.scale = 2.0f;
+                    ent->renderInfo.material.baseColor[0] = 0.0f; // Black
+                    ent->renderInfo.material.baseColor[1] = 0.0f;
+                    ent->renderInfo.material.baseColor[2] = 0.0f;
+                    ent->renderInfo.material.baseColor[3] = 1.0f;
+                    ent->renderInfo.material.emission = 0.0f; // 빛 흡수
+                    ent->renderInfo.material.opacity = 1.0f;
+                    ent->renderInfo.material.depthWrite = true; // 제일 안쪽이라 뎁스 기록
                     bodyConfig.bodyType = driverJoltBodyTypeSphere;
-                    bodyConfig.radius = 1.0f;
-                    bodyConfig.isDynamic = false;
                     break;
                 case serviceRendering3dRenderTypeAccretionDisk:
                     meshConfig.meshType = driverBgfxMeshTypeDisk;
-                    meshConfig.abgr = 0xFF0000FF;
-                    meshConfig.segment = 64,
-                    meshConfig.sphere.radius = 5.0f;
-                    ent->renderInfo.trans.scale = 3.0f;
+                    meshConfig.segment = 64;
+                    meshConfig.disk.radius = bodyConfig.radius = 10.0f;
+                    ent->renderInfo.trans.scale = 1.0f;
+                    ent->renderInfo.material.baseColor[0] = 1.0f; // 강렬한 오렌지/백색
+                    ent->renderInfo.material.baseColor[1] = 0.6f;
+                    ent->renderInfo.material.baseColor[2] = 0.2f;
+                    ent->renderInfo.material.baseColor[3] = 1.0f;
+                    ent->renderInfo.material.emission = 10.0f; // 엄청나게 밝음
+                    ent->renderInfo.material.opacity = 0.8f; // 약간의 투명감
+                    ent->renderInfo.material.metallic = 0.5f; // 가스 밀도로 재해석 가능
+                    ent->renderInfo.material.depthWrite = false; // 반투명 객체는 보통 false
                     bodyConfig.bodyType = driverJoltBodyTypeDisk;
-                    bodyConfig.radius = 5.0f;
-                    bodyConfig.isDynamic = false;
                     break;
                 case serviceRendering3dRenderTypeBackground:
                     break;

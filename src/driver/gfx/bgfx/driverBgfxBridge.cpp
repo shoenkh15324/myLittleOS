@@ -25,8 +25,8 @@ void bgfxMathTransform(bgfxMat4* out, bgfxVec3 pos, bgfxQuat rot, float scale){
     bx::mtxMul(tmp, s, r);
     bx::mtxMul(out->m, tmp, t);
 }
-void bgfxMatViewLookat(bgfxMat4* out, bgfxVec3 eye, bgfxVec3 at, bgfxVec3 up){
-    bx::mtxLookAt(out->m, *(bx::Vec3*)&eye, *(bx::Vec3*)&at, *(bx::Vec3*)&up);
+void bgfxMatViewLookat(bgfxMat4* out, bgfxVec3 pos, bgfxVec3 target, bgfxVec3 up){
+    bx::mtxLookAt(out->m, *(bx::Vec3*)&pos, *(bx::Vec3*)&target, *(bx::Vec3*)&up);
 }
 void bgfxMathProjPerspective(bgfxMat4* out, float fovDeg, float aspect, float nearZ, float farZ){
     bx::mtxProj(out->m, fovDeg, aspect, nearZ, farZ, bgfx_get_caps()->homogeneousDepth);

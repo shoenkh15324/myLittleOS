@@ -22,21 +22,25 @@ typedef enum{
 
 typedef struct driverBgfxVertex{
     float x, y, z;
-    uint32_t abgr;
 } driverBgfxVertex;
 typedef struct driverBgfxTransform{
     float pos[3], rot[4], scale;
 } driverBgfxTransform;
+typedef struct driverBgfxMaterialUniforms{
+    bgfx_uniform_handle_t surfaceColor;
+    bgfx_uniform_handle_t surfaceParams;
+    bgfx_uniform_handle_t diffuseMap;
+    bgfx_uniform_handle_t noiseMap;
+} driverBgfxMaterialUniforms;
 typedef struct driverBgfxMaterial{
     char name[64];
-    float baseColor[4], emission, opacity, metailic, roughness;
+    float baseColor[4], emission, opacity, metallic, roughness;
     uint32_t shaderId, diffuseMap, noiseMap;
     int blendMode;
     bool depthWrite;
 } driverBgfxMaterial;
 typedef struct driverBgfxMeshConfig{
     driverBgfxMeshType meshType;
-    uint32_t abgr;
     int segment;
     union{
         struct{
@@ -56,6 +60,7 @@ typedef struct driverBgfxMesh{
 typedef struct driverBgfxRenderItem{
     driverBgfxMesh mesh;
     driverBgfxTransform trans;
+    driverBgfxMaterial material;
     bgfx_program_handle_t shader;
 } driverBgfxRenderItem;
 typedef struct driverBgfxSceneContext{
@@ -74,6 +79,7 @@ typedef struct driverBgfx{
     bgfx_shader_handle_t vertexShader, fragmentShader;
     bgfx_program_handle_t shaderProgram;
     bgfx_vertex_layout_t layout;
+    driverBgfxMaterialUniforms materialUniforms;
 } driverBgfx;
 
 int driverBgfxOpen(void);

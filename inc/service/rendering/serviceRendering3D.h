@@ -28,11 +28,11 @@ typedef struct serviceRendering3dCamera{
     float accumulatedMouseDx, accumulatedMouseDy, accumulatedMouseWheel;
 } serviceRendering3dCamera;
 typedef struct serviceRendering3dEntity{
-#if APP_DRIVER_PHYSICS_BACKEND == DRIVER_PHYSICS_BACKEND_JOLT
-    uint32_t joltBodyId;
-#endif
 #if APP_DRIVER_GFX == DRIVER_GFX_BGFX
     driverBgfxRenderItem renderInfo;
+#endif
+#if APP_DRIVER_PHYSICS_BACKEND == DRIVER_PHYSICS_BACKEND_JOLT
+    uint32_t joltBodyId;
 #endif
 } serviceRendering3dEntity;
 typedef struct serviceRendering3d{

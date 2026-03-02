@@ -18,7 +18,7 @@ static int _driverBgfxCreateMesh(driverBgfxMeshConfig meshConfig, driverBgfxMesh
             parMesh = par_shapes_create_subdivided_sphere(meshConfig.segment);
             break;
         case driverBgfxMeshTypeDisk:
-            parMesh = par_shapes_create_disk(meshConfig.disk.radius, meshConfig.segment, (float[]){0,0,0}, (float[]){0,0,1});
+            parMesh = par_shapes_create_disk(meshConfig.disk.radius, meshConfig.segment, (float[]){0,0,0}, (float[]){0,1,0});
             break;
         default: logError("Unsupported mesh type: %d", meshConfig.meshType);
             return retFail;
@@ -35,7 +35,6 @@ static int _driverBgfxCreateMesh(driverBgfxMeshConfig meshConfig, driverBgfxMesh
         vertices[i].x = parMesh->points[i * 3 + 0];
         vertices[i].y = parMesh->points[i * 3 + 1];
         vertices[i].z = parMesh->points[i * 3 + 2];
-        vertices[i].abgr = meshConfig.abgr;
     }
     outputMesh->vbh = bgfx_create_vertex_buffer(bgfx_copy(vertices, sizeof(driverBgfxVertex) * outputMesh->numVertices), &_driverBgfx.layout, BGFX_BUFFER_NONE);
     outputMesh->ibh = bgfx_create_index_buffer(bgfx_copy(parMesh->triangles, sizeof(uint16_t) * outputMesh->numIndices), BGFX_BUFFER_NONE);
@@ -44,7 +43,7 @@ static int _driverBgfxCreateMesh(driverBgfxMeshConfig meshConfig, driverBgfxMesh
     if(outputMesh->vbh.idx == 0xffff || outputMesh->ibh.idx == 0xffff){ logError("bgfx buffer creation failed"); return retFail; }
     return retOk;
 }
-static bgfx_shader_handle_t _driverBgfxLoadShager(const char* filename){
+static bgfx_shader_handle_t _driverBgfxLoadShader(const char* filename){
     FILE* file = fopen(filename, "rb");
     if(!file){ logError("Failed to open shader file: %s", filename);
         return (bgfx_shader_handle_t){0xffff};
@@ -84,14 +83,18 @@ static int _driverBgfxInit(void){
     // 정점 레이아웃 (Vertex Layout) 정의
     bgfx_vertex_layout_begin(&_driverBgfx.layout, bgfx_get_renderer_type());
     bgfx_vertex_layout_add(&_driverBgfx.layout, BGFX_ATTRIB_POSITION, 3, BGFX_ATTRIB_TYPE_FLOAT, false, false);
-    bgfx_vertex_layout_add(&_driverBgfx.layout, BGFX_ATTRIB_COLOR0, 4, BGFX_ATTRIB_TYPE_UINT8, true, false);
     bgfx_vertex_layout_end(&_driverBgfx.layout);
     // Shader 로드
-    _driverBgfx.vertexShader = _driverBgfxLoadShager("assets/shaders/glsl/vs_cubes.bin");
-    _driverBgfx.fragmentShader = _driverBgfxLoadShager("assets/shaders/glsl/fs_cubes.bin");
+    _driverBgfx.vertexShader = _driverBgfxLoadShader("../assets/shaders/vs_blackholeSimulation.bin");
+    _driverBgfx.fragmentShader = _driverBgfxLoadShader("../assets/shaders/fs_blackholeSimulation.bin");
     _driverBgfx.shaderProgram = bgfx_create_program(_driverBgfx.vertexShader, _driverBgfx.fragmentShader, true);
     if(_driverBgfx.shaderProgram.idx == 0xffff){ logError("Failed to create shader program!"); }
-    return retOk;
+    // 마테리얼
+    _driverBgfx.materialUniforms.surfaceColor = bgfx_create_uniform("surfaceColor", BGFX_UNIFORM_TYPE_VEC4, 1);
+    _driverBgfx.materialUniforms.surfaceParams = bgfx_create_uniform("surfaceParams", BGFX_UNIFORM_TYPE_VEC4, 1);
+    _driverBgfx.materialUniforms.diffuseMap = bgfx_create_uniform("diffuseMap", BGFX_UNIFORM_TYPE_SAMPLER, 1);
+    _driverBgfx.materialUniforms.noiseMap = bgfx_create_uniform("noiseMap", BGFX_UNIFORM_TYPE_SAMPLER, 1);
+    return retOk; 
 }
 int driverBgfxClose(void){
     int result = retOk;
@@ -135,7 +138,7 @@ int driverBgfxSync(uint16_t sync, uintptr_t arg1, uintptr_t arg2, uintptr_t arg3
             }
             driverBgfxSceneContext* pScene = (driverBgfxSceneContext*)arg1;
             // 뷰포트 클리어 및 설정
-            bgfx_set_view_rect(0, 0, 0, (uint16_t)_driverBgfx.width, (uint16_t)_driverBgfx.height);
+            bgfx_set_view_rect(0, 0, 0, (uint16_t)_driverBgfx.width, (uint16_t)_driverBgfx.height);\
             bgfx_set_view_clear(0, BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH, 0x303030ff, 1.0f, 0);
             bgfx_touch(0);
             // 동적 카메라 뷰 행렬 계산
@@ -158,11 +161,18 @@ int driverBgfxSync(uint16_t sync, uintptr_t arg1, uintptr_t arg2, uintptr_t arg3
                 bgfxMat4 mtx;
                 bgfxMathTransform(&mtx, *(bgfxVec3*)item->trans.pos, *(bgfxQuat*)item->trans.rot, item->trans.scale);
                 bgfx_set_transform(mtx.m, 1);
+                // 마테리얼 데이터 전송
+                bgfx_set_uniform(_driverBgfx.materialUniforms.surfaceColor, item->material.baseColor, 1);
+                float surfaceParams[4] = { item->material.emission, item->material.opacity, item->material.metallic, item->material.roughness };
+                bgfx_set_uniform(_driverBgfx.materialUniforms.surfaceParams, surfaceParams, 1);
                 // 셰이더 결정 (개별 셰이더가 없으면 드라이버 기본 셰이더 사용)
-                bgfx_program_handle_t program = (item->shader.idx != 0xffff) ? item->shader : _driverBgfx.shaderProgram;
+                bgfx_program_handle_t shaderProgram = _driverBgfx.shaderProgram;
+                if(item->shader.idx != 0 && item->shader.idx != 0xffff) shaderProgram = item->shader;
                 // 상태 설정 및 제출
-                bgfx_set_state(BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A | BGFX_STATE_WRITE_Z | BGFX_STATE_DEPTH_TEST_LESS | BGFX_STATE_MSAA, 0);
-                bgfx_submit(0, program, 0, BGFX_DISCARD_ALL);
+                uint64_t state = BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A | BGFX_STATE_DEPTH_TEST_LESS | BGFX_STATE_MSAA;
+                if(item->material.depthWrite) { state |= BGFX_STATE_WRITE_Z; }
+                bgfx_set_state(state, 0);
+                bgfx_submit(0, shaderProgram, 0, BGFX_DISCARD_ALL);
             }
             bgfx_frame(false); // 프레임 렌더링 종료 명령
             break;
