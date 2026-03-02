@@ -5,6 +5,7 @@
 #include "driver/driverCommon.h"
 
 #if APP_DRIVER_PLATFORM == DRIVER_PLATFORM_WIN32
+#include <windowsx.h>
 
 static driverPlatformWin32 _driverPlatformWin32 = {
     .objState = objStateClosed,
@@ -20,7 +21,6 @@ static LRESULT CALLBACK _driverPlatformWin32WindowProc(HWND hwnd, UINT msg, WPAR
 #if APP_ENGINE_2D
             asyncPush(asyncTypeAsync, appRenderEventOpenglSyncUpdateViewport, LOWORD(lParam), HIWORD(lParam), 0 ,0);
 #elif APP_BLACKHOLE_SIMULATION
-            // TODO
             asyncPush(asyncTypeAsync, appMainEventBgfxUpdateViewport, LOWORD(lParam), HIWORD(lParam), 0 ,0);
 #endif
             return 0;
@@ -31,6 +31,16 @@ static LRESULT CALLBACK _driverPlatformWin32WindowProc(HWND hwnd, UINT msg, WPAR
             return 0;
         case WM_MOVE:
             return 0;
+        case WM_SETFOCUS:
+            return 0;
+        case WM_MOUSEMOVE:
+            asyncPush(asyncTypeAsync, appMainEventPlatformWin32MouseMove, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam), 0, 0);
+            return 0;
+        case WM_MOUSEWHEEL:{
+            int wheelDelta = GET_WHEEL_DELTA_WPARAM(wParam) / WHEEL_DELTA;
+            asyncPush(asyncTypeAsync, appMainEventPlatformWin32MouseWheel, wheelDelta, 0, 0, 0);
+            return 0;
+        }
     }
     return DefWindowProc(hwnd, msg, wParam, lParam);
 }
@@ -102,12 +112,17 @@ int driverPlatformWin32Sync(uint16_t sync, uintptr_t arg1, uintptr_t arg2, uintp
             }
             break;
         }
-        case driverPlatformWin32SyncShowWindow:
+        case driverPlatformWin32SyncShowWindow:{
             ShowWindow(_driverPlatformWin32.hwnd, SW_SHOW);
             UpdateWindow(_driverPlatformWin32.hwnd);
             _driverPlatformWin32.hdc = GetDC(_driverPlatformWin32.hwnd);
+            POINT pt = { _driverPlatformWin32.width / 2, _driverPlatformWin32.height / 2 };
+            ClientToScreen(_driverPlatformWin32.hwnd, &pt);
+            SetCursorPos(pt.x, pt.y);
+            ShowCursor(FALSE);
             _driverPlatformWin32.running = 1;
             break;
+        }
         case driverPlatformWin32SyncResizeWindow:
             if(!arg1 || !arg2){ logError("Invalid Params");
                 result = retFail; goto syncExit;
@@ -144,6 +159,23 @@ int driverPlatformWin32Sync(uint16_t sync, uintptr_t arg1, uintptr_t arg2, uintp
             *(int*)arg2 = _driverPlatformWin32.height;
             break;
         }
+        case driverPlatformWin32SyncMouseMove:{
+            int32_t currMouseX = (int32_t)arg1, currMouseY = (int32_t)arg2;
+            int centerX = _driverPlatformWin32.width / 2, centerY = _driverPlatformWin32.height / 2;
+            int32_t deltaX = currMouseX - centerX, deltaY = currMouseY - centerY;
+            if(centerX == currMouseX && centerY == currMouseY) break;
+            //logDebug("currX: %d, currY: %d, deltaX: %d, deltaY: %d", currMouseX, currMouseY, deltaX, deltaY);
+            asyncPush(asyncTypeAsync, appMainEventServiceRenderingUpdateCamera, (uintptr_t)deltaX, (uintptr_t)deltaY, 0 ,0);
+            POINT pt = { centerX, centerY };
+            ClientToScreen(_driverPlatformWin32.hwnd, &pt);
+            SetCursorPos(pt.x, pt.y);
+            _driverPlatformWin32.lastMouseX = centerX;
+            _driverPlatformWin32.lastMouseY = centerY;
+            break;
+        }
+        case driverPlatformWin32SyncMouseWheel:
+            asyncPush(asyncTypeAsync, appMainEventServiceRenderingUpdateZoom, arg1, 0, 0 ,0);
+            break;
     }
 syncExit:
     osalMutexUnlock(&_driverPlatformWin32.objMutex);

@@ -54,6 +54,12 @@ static void _appMainEventHandler(void* arg1, void* arg2, void* arg3){
         case appMainEventPlatformWin32ResizeWindow:
             driverPlatformWin32Sync(driverPlatformWin32SyncResizeWindow, pAsync->arg1, pAsync->arg2, 0, 0);
             break;
+        case appMainEventPlatformWin32MouseMove:
+            driverPlatformWin32Sync(driverPlatformWin32SyncMouseMove, pAsync->arg1, pAsync->arg2, 0, 0);
+            break;
+        case appMainEventPlatformWin32MouseWheel:
+            driverPlatformWin32Sync(driverPlatformWin32SyncMouseWheel, pAsync->arg1, 0, 0, 0);
+            break;
         // Bgfx
         case appMainEventBgfxInit:
             driverBgfxSync(driverBgfxSyncInit, 0, 0, 0, 0);
@@ -61,9 +67,15 @@ static void _appMainEventHandler(void* arg1, void* arg2, void* arg3){
         case appMainEventBgfxUpdateViewport:
             driverBgfxSync(driverBgfxSyncUpdateViewport, pAsync->arg1, pAsync->arg2, 0, 0);
             break;
-        //
+        // Rendering Service
         case appMainEventServiceRenderingCreateEntity:
             serviceRendering3dSync(serviceRendering3dSyncCreateEntity, pAsync->arg1, pAsync->arg2, pAsync->arg3, 0);
+            break;
+        case appMainEventServiceRenderingUpdateCamera:
+            serviceRendering3dSync(serviceRendering3dSyncUpdateCamera, pAsync->arg1, pAsync->arg2, 0, 0);
+            break;
+        case appMainEventServiceRenderingUpdateZoom:
+            serviceRendering3dSync(serviceRendering3dSyncUpdateZoom, pAsync->arg1, 0, 0, 0);
             break;
     }
 appMainEventHandlerExit:

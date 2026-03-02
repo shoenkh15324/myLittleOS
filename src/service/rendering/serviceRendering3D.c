@@ -5,11 +5,37 @@
 #include "service/serviceCommon.h"
 
 #if APP_SERVICE_RENDERING == SERVICE_RENDERING_3D
+#include <math.h>
+
+#define PI 3.1415926535f
+#define TO_RAD(deg) (deg * (PI / 180.0f))
 
 static serviceRendering3d _serviceRendering3d = {
     .objState = objStateClosed,
 };
 
+static void _serviceRendering3dUpdateCamera(void){
+    if(_serviceRendering3d.camera.accumulatedMouseDx || _serviceRendering3d.camera.accumulatedMouseDy){
+        _serviceRendering3d.camera.yaw += _serviceRendering3d.camera.accumulatedMouseDx * APP_SERVICE_RENDERING_MOUSE_MOVE_SENSITIVITY * DRIVER_PHYSICS_BACKEND_JOLT_DELTA_TIME;
+        _serviceRendering3d.camera.pitch += _serviceRendering3d.camera.accumulatedMouseDy * APP_SERVICE_RENDERING_MOUSE_MOVE_SENSITIVITY * DRIVER_PHYSICS_BACKEND_JOLT_DELTA_TIME;
+        if(_serviceRendering3d.camera.pitch > 89.0f) _serviceRendering3d.camera.pitch = 89.0f;
+        if(_serviceRendering3d.camera.pitch < -89.0f) _serviceRendering3d.camera.pitch = -89.0f;
+        float p = TO_RAD(_serviceRendering3d.camera.pitch);
+        float y = TO_RAD(_serviceRendering3d.camera.yaw);
+        _serviceRendering3d.camera.front[0] = cosf(y) * cosf(p);
+        _serviceRendering3d.camera.front[1] = sinf(p);
+        _serviceRendering3d.camera.front[2] = sinf(y) * cosf(p);
+        _serviceRendering3d.camera.accumulatedMouseDx = 0.0f;
+        _serviceRendering3d.camera.accumulatedMouseDy = 0.0f;
+    }
+    if (_serviceRendering3d.camera.accumulatedMouseWheel != 0.0f) {
+        float wheelDelta = _serviceRendering3d.camera.accumulatedMouseWheel;
+        _serviceRendering3d.camera.fov -= wheelDelta * APP_SERVICE_RENDERING_MOUSE_WHEEL_SENSITIVITY;
+        if (_serviceRendering3d.camera.fov < 1.0f)   _serviceRendering3d.camera.fov = 1.0f;
+        if (_serviceRendering3d.camera.fov > 120.0f) _serviceRendering3d.camera.fov = 120.0f;
+        _serviceRendering3d.camera.accumulatedMouseWheel = 0.0f;
+    }
+}
 int serviceRendering3dClose(void){
     int result = retOk;
     if(_serviceRendering3d.objState >= objStateOpening){
@@ -27,6 +53,17 @@ int serviceRendering3dOpen(void){
     osalMutexOpen(&_serviceRendering3d.objMutex);
     osalMutexLock(&_serviceRendering3d.objMutex, -1);
     _serviceRendering3d.objState = objStateOpening;
+    //
+    // camera setting
+    _serviceRendering3d.camera.pos[0] = 0.0f;
+    _serviceRendering3d.camera.pos[1] = 10.0f;
+    _serviceRendering3d.camera.pos[2] = 30.0f;
+    _serviceRendering3d.camera.up[0] = 0.0f;
+    _serviceRendering3d.camera.up[1] = 1.0f;
+    _serviceRendering3d.camera.up[2] = 0.0f;
+    _serviceRendering3d.camera.yaw = -90.0f;
+    _serviceRendering3d.camera.pitch = -15.0f;
+    _serviceRendering3d.camera.fov = 60.0f;
     //
     _serviceRendering3d.objState = objStateOpened;
 openExit:
@@ -46,7 +83,21 @@ int serviceRendering3dSync(uint16_t sync, uintptr_t arg1, uintptr_t arg2, uintpt
                     driverJoltSync(driverJoltSyncGetBodyTransform, (uintptr_t)ent->joltBodyId, (uintptr_t)ent->renderInfo.trans.pos, (uintptr_t)ent->renderInfo.trans.rot, 0);
                 }
             }
-            driverBgfxSync(driverBgfxSyncRenderFrame, (uintptr_t)_serviceRendering3d.entities, (uintptr_t)_serviceRendering3d.entitiyCount, sizeof(serviceRendering3dEntity), offsetof(serviceRendering3dEntity, renderInfo));
+            _serviceRendering3dUpdateCamera();
+            driverBgfxSceneContext scene = {
+                .pItems = (uint8_t*)_serviceRendering3d.entities,
+                .itemCount = _serviceRendering3d.entitiyCount,
+                .itemStride = sizeof(serviceRendering3dEntity),
+                .itemOffset = offsetof(serviceRendering3dEntity, renderInfo),
+                .camPos[0] = _serviceRendering3d.camera.pos[0],
+                .camPos[1] = _serviceRendering3d.camera.pos[1],
+                .camPos[2] = _serviceRendering3d.camera.pos[2],
+                .camFront[0] = _serviceRendering3d.camera.front[0],
+                .camFront[1] = _serviceRendering3d.camera.front[1],
+                .camFront[2] = _serviceRendering3d.camera.front[2],
+                .fov = _serviceRendering3d.camera.fov,
+            };
+            driverBgfxSync(driverBgfxSyncRenderFrame, (uintptr_t)&scene, 0, 0, 0);
             break;
         }
         case serviceRendering3dSyncCreateEntity:{
@@ -112,6 +163,15 @@ int serviceRendering3dSync(uint16_t sync, uintptr_t arg1, uintptr_t arg2, uintpt
             }
             _serviceRendering3d.entitiyCount++;
             logDebug("Entity Created - ID: %d, Pos: %.1f, %.1f, %.1f", ent->joltBodyId, ent->renderInfo.trans.pos[0], ent->renderInfo.trans.pos[1], ent->renderInfo.trans.pos[2]);
+            break;
+        }
+        case serviceRendering3dSyncUpdateCamera:{
+            _serviceRendering3d.camera.accumulatedMouseDx += (float)(int16_t)arg1;
+            _serviceRendering3d.camera.accumulatedMouseDy += (float)(int16_t)arg2;
+            break;
+        }
+        case serviceRendering3dSyncUpdateZoom:{
+            _serviceRendering3d.camera.accumulatedMouseWheel += (float)(int16_t)(uint16_t)arg1;
             break;
         }
     }

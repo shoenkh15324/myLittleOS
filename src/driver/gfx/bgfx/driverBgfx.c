@@ -133,37 +133,38 @@ int driverBgfxSync(uint16_t sync, uintptr_t arg1, uintptr_t arg2, uintptr_t arg3
             if(!arg1){ logError("Invalid Params");
                 result = retFail; goto syncExit;
             }
+            driverBgfxSceneContext* pScene = (driverBgfxSceneContext*)arg1;
+            // 뷰포트 클리어 및 설정
             bgfx_set_view_rect(0, 0, 0, (uint16_t)_driverBgfx.width, (uint16_t)_driverBgfx.height);
             bgfx_set_view_clear(0, BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH, 0x303030ff, 1.0f, 0);
             bgfx_touch(0);
-            // 카메라 및 뷰 설정
+            // 동적 카메라 뷰 행렬 계산
             bgfxMat4 view, proj;
-            bgfxMatViewLookat(&view, (bgfxVec3){0.0f, 20.0f, -35.0f}, (bgfxVec3){0.0f, 0.0f, 0.0f}, (bgfxVec3){0.0f, 1.0f, 0.0f});
-            bgfxMathProjPerspective(&proj, 60.0f, (float) _driverBgfx.width / (float)_driverBgfx.height, 0.1f, 100.0f);
+            bgfxVec3 pos = { pScene->camPos[0], pScene->camPos[1], pScene->camPos[2] };
+            bgfxVec3 target = { pos.v[0] + pScene->camFront[0], pos.v[1] + pScene->camFront[1], pos.v[2] + pScene->camFront[2] };
+            bgfxVec3 up = { 0.0f, 1.0f, 0.0f };
+            bgfxMatViewLookat(&view, pos, target, up);
+            // 프로젝션 행렬 설정 (FOV 등도 필요시 pScene에서 가져오도록 확장 가능)
+            bgfxMathProjPerspective(&proj, pScene->fov, (float)_driverBgfx.width / (float)_driverBgfx.height, 0.1f, 100.0f);
             bgfx_set_view_transform(0, view.m, proj.m);
-            // 엔티티 순회 랜더링
-            uint8_t* pEntityList = (uint8_t*)arg1;
-            uint32_t entityCount = (uint32_t)arg2;
-            uint32_t stride = (uint32_t)arg3;
-            uint32_t offset = (uint32_t)arg4;
-            for(uint32_t i = 0; i < entityCount; i++){
-                uint8_t* pCurrEntity = pEntityList + (i * stride) + offset;
-                driverBgfxRenderInfo* renderInfo = (driverBgfxRenderInfo*)pCurrEntity;
-                float* pPos = renderInfo->trans.pos;
-                float* pRot = renderInfo->trans.rot;
-                float scale = renderInfo->trans.scale;
-                bgfx_set_vertex_buffer(0, renderInfo->mesh.vbh, 0, UINT16_MAX);
-                bgfx_set_index_buffer(renderInfo->mesh.ibh, 0, renderInfo->mesh.numIndices);
+            // 엔티티 순회 렌더링
+            for(uint32_t i = 0; i < pScene->itemCount; i++){
+                uint8_t* pCurrItem = pScene->pItems + (i * pScene->itemStride) + pScene->itemOffset;
+                driverBgfxRenderItem* item = (driverBgfxRenderItem*)pCurrItem;
+                // 버퍼 세팅
+                bgfx_set_vertex_buffer(0, item->mesh.vbh, 0, UINT16_MAX);
+                bgfx_set_index_buffer(item->mesh.ibh, 0, item->mesh.numIndices);
+                // 트랜스폼 행렬 계산 (Pos, Rot, Scale 통합)
                 bgfxMat4 mtx;
-                bgfxMathTransform(&mtx, *(bgfxVec3*)pPos, *(bgfxQuat*)pRot, scale);
+                bgfxMathTransform(&mtx, *(bgfxVec3*)item->trans.pos, *(bgfxQuat*)item->trans.rot, item->trans.scale);
                 bgfx_set_transform(mtx.m, 1);
-                bgfx_set_vertex_buffer(0, renderInfo->mesh.vbh, 0, UINT16_MAX);
-                bgfx_set_index_buffer(renderInfo->mesh.ibh, 0, renderInfo->mesh.numIndices);
-                bgfx_program_handle_t program = (renderInfo->shader.idx != 0xffff) ? renderInfo->shader : _driverBgfx.shaderProgram;
+                // 셰이더 결정 (개별 셰이더가 없으면 드라이버 기본 셰이더 사용)
+                bgfx_program_handle_t program = (item->shader.idx != 0xffff) ? item->shader : _driverBgfx.shaderProgram;
+                // 상태 설정 및 제출
                 bgfx_set_state(BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A | BGFX_STATE_WRITE_Z | BGFX_STATE_DEPTH_TEST_LESS | BGFX_STATE_MSAA, 0);
                 bgfx_submit(0, program, 0, BGFX_DISCARD_ALL);
             }
-            bgfx_frame(false);
+            bgfx_frame(false); // 프레임 렌더링 종료 명령
             break;
         }
         case driverBgfxSyncUpdateViewport:
@@ -175,7 +176,7 @@ int driverBgfxSync(uint16_t sync, uintptr_t arg1, uintptr_t arg2, uintptr_t arg3
             bgfx_reset((uint32_t)arg1, (uint32_t)arg2, BGFX_RESET_VSYNC, BGFX_TEXTURE_FORMAT_COUNT);
             break;
         case driverBgfxSyncCreateMesh:
-            if(_driverBgfxCreateMesh(*(driverBgfxMeshConfig*)arg1, (driverBgfxRenderInfo*)arg2)){ logError("_driverBgfxCreateMesh Fail");
+            if(_driverBgfxCreateMesh(*(driverBgfxMeshConfig*)arg1, (driverBgfxRenderItem*)arg2)){ logError("_driverBgfxCreateMesh Fail");
                 result = retFail; goto syncExit;
             }
             break;

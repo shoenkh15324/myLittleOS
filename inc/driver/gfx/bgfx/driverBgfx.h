@@ -27,6 +27,13 @@ typedef struct driverBgfxVertex{
 typedef struct driverBgfxTransform{
     float pos[3], rot[4], scale;
 } driverBgfxTransform;
+typedef struct driverBgfxMaterial{
+    char name[64];
+    float baseColor[4], emission, opacity, metailic, roughness;
+    uint32_t shaderId, diffuseMap, noiseMap;
+    int blendMode;
+    bool depthWrite;
+} driverBgfxMaterial;
 typedef struct driverBgfxMeshConfig{
     driverBgfxMeshType meshType;
     uint32_t abgr;
@@ -46,11 +53,16 @@ typedef struct driverBgfxMesh{
     uint32_t numVertices;
     uint32_t numIndices;
 } driverBgfxMesh;
-typedef struct driverBgfxRenderInfo{
+typedef struct driverBgfxRenderItem{
     driverBgfxMesh mesh;
     driverBgfxTransform trans;
     bgfx_program_handle_t shader;
-} driverBgfxRenderInfo;
+} driverBgfxRenderItem;
+typedef struct driverBgfxSceneContext{
+    uint8_t* pItems;
+    uint32_t itemCount, itemStride, itemOffset;
+    float camPos[3], camFront[3], fov;
+} driverBgfxSceneContext;
 typedef struct driverBgfx{
     objectState objState;
     osalMutex objMutex;

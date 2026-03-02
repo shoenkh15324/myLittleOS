@@ -18,11 +18,15 @@ typedef enum{
         appMainEventPlatformWin32DestroyWindow,
         appMainEventPlatformWin32ShowWindow,
         appMainEventPlatformWin32ResizeWindow,
+        appMainEventPlatformWin32MouseMove,
+        appMainEventPlatformWin32MouseWheel,
         // Bgfx
         appMainEventBgfxInit,
         appMainEventBgfxUpdateViewport,
         // Rendering Service,
         appMainEventServiceRenderingCreateEntity,
+        appMainEventServiceRenderingUpdateCamera,
+        appMainEventServiceRenderingUpdateZoom,
     appMainEventEnd = 99,
 } appEventList;
 
@@ -66,6 +70,8 @@ typedef enum{
 #if APP_SERVICE_RENDERING
     #define APP_SERVICE_RENDERING_FPS 60
     #define APP_SERVICE_RENDERING_RENDER_QUEUE_SIZE (1024 * 1024)
+    #define APP_SERVICE_RENDERING_MOUSE_MOVE_SENSITIVITY 1.0f
+    #define APP_SERVICE_RENDERING_MOUSE_WHEEL_SENSITIVITY 2.0f
 #endif
 
 /* [APP] */

@@ -13,6 +13,8 @@ enum{
     driverPlatformWin32SyncDestroyWindow,
     driverPlatformWin32SyncGetNativeHandle,
     driverPlatformWin32SyncGetClientSize,
+    driverPlatformWin32SyncMouseMove,
+    driverPlatformWin32SyncMouseWheel,
 };
 enum{
     driverPlatformWin32StateXXX = objStateBegin,
@@ -23,6 +25,7 @@ typedef struct driverPlatformWin32{
     osalMutex objMutex;
     HWND hwnd;
     HDC hdc;
+    int32_t lastMouseX, lastMouseY;
     int width, height;
     volatile int running, msgNeedAsync;
 } driverPlatformWin32;
