@@ -60,7 +60,7 @@ int driverJoltSync(uint16_t sync, uintptr_t arg1, uintptr_t arg2, uintptr_t arg3
             if(!arg1 || !arg2){ logError("Invalid Params");
                 result = retFail; goto syncExit;
             }
-            driverJoltBodyConfig* bodyConfig = (driverJoltBodyConfig*)arg1;
+            driverJoltBody* bodyConfig = (driverJoltBody*)arg1;
             uint32_t bodyId = 0;
             switch(bodyConfig->bodyType){
                 case driverJoltBodyTypeSphere:

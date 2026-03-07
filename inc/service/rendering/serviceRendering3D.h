@@ -10,6 +10,7 @@ enum{
     serviceRendering3dSyncCreateEntity,
     serviceRendering3dSyncUpdateCamera,
     serviceRendering3dSyncUpdateZoom,
+    serviceRendering3dSyncUpdatePhysics,
 };
 enum{
     serviceRendering3dStateXXX = objStateBegin,
@@ -27,8 +28,9 @@ typedef struct serviceRendering3dCamera{
     float accumulatedMouseDx, accumulatedMouseDy, accumulatedMouseWheel;
 } serviceRendering3dCamera;
 typedef struct serviceRendering3dEntity{
+    serviceRendering3dRenderType type;
 #if APP_DRIVER_GFX == DRIVER_GFX_BGFX
-    driverBgfxRenderItem renderInfo;
+    driverBgfxRenderItem item;
 #endif
 #if APP_DRIVER_PHYSICS_BACKEND == DRIVER_PHYSICS_BACKEND_JOLT
     uint32_t joltBodyId;

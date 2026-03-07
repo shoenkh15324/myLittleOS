@@ -10,37 +10,38 @@ static driverBgfx _driverBgfx = {
     .objState = objStateClosed,
 };
 
-static int _driverBgfxCreateMesh(driverBgfxMeshConfig meshConfig, driverBgfxMesh* outputMesh){
-    if(!outputMesh){ logError("Invalid Param"); return retFail; }
-    par_shapes_mesh* parMesh = NULL;
-    switch(meshConfig.meshType){
-        case driverBgfxMeshTypeSphere:
-            parMesh = par_shapes_create_subdivided_sphere(meshConfig.segment);
-            break;
-        case driverBgfxMeshTypeDisk:
-            parMesh = par_shapes_create_disk(meshConfig.disk.radius, meshConfig.segment, (float[]){0,0,0}, (float[]){0,1,0});
-            break;
-        default: logError("Unsupported mesh type: %d", meshConfig.meshType);
-            return retFail;
+static par_shapes_mesh* _driverBgfxCreateParMesh(driverBgfxMeshType type){
+    switch(type){
+        case driverBgfxMeshTypeSphere: 
+            return par_shapes_create_subdivided_sphere(5);
+        case driverBgfxMeshTypeQuad:
+            return par_shapes_create_plane(1, 1);
+        default: return NULL;
     }
-    if(!parMesh){ logError("par_shapes_mesh creation failed"); return retFail; }
-    outputMesh->numVertices = (uint32_t)parMesh->npoints;
-    outputMesh->numIndices = (uint32_t)parMesh->ntriangles * 3;
+}
+static int _driverBgfxCreateMesh(driverBgfxRenderItem* item){
+    if(!item){ logError("Invalid Param"); return retFail; }
+    par_shapes_mesh* parMesh = _driverBgfxCreateParMesh(item->mesh.meshType);
+    if(!parMesh){ logError("_driverBgfxCreateParMesh Fail"); return retFail; }
+    item->mesh.numVertices = (uint32_t)parMesh->npoints;
+    item->mesh.numIndices = (uint32_t)parMesh->ntriangles * 3;
     driverBgfxVertex* vertices;
-    if(osalMalloc((void**)&vertices, sizeof(driverBgfxVertex) * outputMesh->numVertices)){ logError("osalMalloc fail"); 
+    if(osalMalloc((void**)&vertices, (sizeof(driverBgfxVertex) * item->mesh.numVertices))){ logError("osalMalloc fail"); 
         par_shapes_free_mesh(parMesh);
         return retFail;
     }
-    for(uint32_t i = 0; i < outputMesh->numVertices; i++){
-        vertices[i].x = parMesh->points[i * 3 + 0];
-        vertices[i].y = parMesh->points[i * 3 + 1];
-        vertices[i].z = parMesh->points[i * 3 + 2];
+    uint16_t* indices;
+    if(osalMalloc((void**)&indices, (sizeof(uint16_t) * item->mesh.numIndices))){ logError("osalMalloc fail"); 
+        par_shapes_free_mesh(parMesh);
+        return retFail;
     }
-    outputMesh->vbh = bgfx_create_vertex_buffer(bgfx_copy(vertices, sizeof(driverBgfxVertex) * outputMesh->numVertices), &_driverBgfx.layout, BGFX_BUFFER_NONE);
-    outputMesh->ibh = bgfx_create_index_buffer(bgfx_copy(parMesh->triangles, sizeof(uint16_t) * outputMesh->numIndices), BGFX_BUFFER_NONE);
-    if(osalFree(vertices)){ logError("osalFree fail"); return retFail; }
+    for(uint32_t i = 0; i < item->mesh.numVertices; i++) vertices[i] = (driverBgfxVertex){parMesh->points[i*3], parMesh->points[i*3+1], parMesh->points[i*3+2]};
+    for(uint32_t i = 0; i < item->mesh.numIndices; i++) indices[i] = (uint16_t)parMesh->triangles[i];
+    item->mesh.vbh = bgfx_create_vertex_buffer(bgfx_make_ref(vertices, (sizeof(*vertices) * item->mesh.numVertices)), &_driverBgfx.layout, BGFX_BUFFER_NONE);
+    item->mesh.ibh = bgfx_create_index_buffer(bgfx_make_ref(indices, (sizeof(*indices) * item->mesh.numIndices)), BGFX_BUFFER_NONE);
     par_shapes_free_mesh(parMesh);
-    if(outputMesh->vbh.idx == 0xffff || outputMesh->ibh.idx == 0xffff){ logError("bgfx buffer creation failed"); return retFail; }
+    osalFree(vertices); osalFree(indices);
+    return (item->mesh.vbh.idx != 0xffff) ? retOk : retFail;
     return retOk;
 }
 static bgfx_shader_handle_t _driverBgfxLoadShader(const char* filename){
@@ -87,12 +88,8 @@ static int _driverBgfxInit(void){
     // Shader 로드
     _driverBgfx.vertexShader = _driverBgfxLoadShader("../assets/shaders/vs_blackholeSimulation.bin");
     _driverBgfx.fragmentShader = _driverBgfxLoadShader("../assets/shaders/fs_blackholeSimulation.bin");
-    _driverBgfx.shaderProgram = bgfx_create_program(_driverBgfx.vertexShader, _driverBgfx.fragmentShader, true);
-    if(_driverBgfx.shaderProgram.idx == 0xffff){ logError("Failed to create shader program!"); }
-    // 마테리얼
-    _driverBgfx.uniforms.camPos = bgfx_create_uniform("u_camPos", BGFX_UNIFORM_TYPE_VEC4, 1);
-    _driverBgfx.uniforms.shaderParams1 = bgfx_create_uniform("u_shaderParams1", BGFX_UNIFORM_TYPE_VEC4, 1);
-    _driverBgfx.uniforms.shaderParams2 = bgfx_create_uniform("u_shaderParams2", BGFX_UNIFORM_TYPE_VEC4, 1);
+    // _driverBgfx.shaderProgram = bgfx_create_program(_driverBgfx.vertexShader, _driverBgfx.fragmentShader, true);
+    // if(_driverBgfx.shaderProgram.idx == 0xffff){ logError("Failed to create shader program!"); }
     return retOk; 
 }
 int driverBgfxClose(void){
@@ -131,6 +128,7 @@ int driverBgfxSync(uint16_t sync, uintptr_t arg1, uintptr_t arg2, uintptr_t arg3
                 result = retFail; goto syncExit;
             }
             break;
+#if 0
         case driverBgfxSyncRenderFrame:{
             if(!arg1){ logError("Invalid Params");
                 result = retFail; goto syncExit;
@@ -183,6 +181,42 @@ int driverBgfxSync(uint16_t sync, uintptr_t arg1, uintptr_t arg2, uintptr_t arg3
             bgfx_frame(false); // 프레임 렌더링 종료 명령
             break;
         }
+#endif
+        case driverBgfxSyncBeginFrame:
+            break;
+        case driverBgfxSyncSetPass:
+            if(!arg1){ logError("Invalid Params");
+                result = retFail; goto syncExit;
+            }
+            driverBgfxPassType pass = (driverBgfxPassType)arg1;
+            switch(pass){
+                case driverBgfxPassTypeBackground: _driverBgfx.currViewId = 0;
+                    break;
+                case driverBgfxPassTypeObject: _driverBgfx.currViewId = 1;
+                    break;
+                case driverBgfxPassTypePostProcess: _driverBgfx.currViewId = 2;
+                    break;
+            }
+            break;
+        case driverBgfxSyncSubmitItem:{
+            if(!arg1){ logError("Invalid Params");
+                result = retFail; goto syncExit;
+            }
+            driverBgfxRenderItem* item = (driverBgfxRenderItem*)arg1;
+            // TODO
+            bgfx_submit(_driverBgfx.currViewId, item->material.shader, 0, BGFX_DISCARD_ALL);
+            break;
+        }
+        case driverBgfxSyncEndFrame:
+            break;
+        case driverBgfxSyncCreateMesh:
+            if(!arg1){ logError("Invalid Params");
+                result = retFail; goto syncExit;
+            }
+            if(_driverBgfxCreateMesh((driverBgfxRenderItem*)arg1)){ logError("_driverBgfxCreateMesh Fail");
+                result = retFail; goto syncExit;
+            }
+            break;
         case driverBgfxSyncUpdateViewport:
             if(!arg1 || !arg2){ logError("Invalid Params");
                 result = retFail; goto syncExit;
@@ -190,11 +224,6 @@ int driverBgfxSync(uint16_t sync, uintptr_t arg1, uintptr_t arg2, uintptr_t arg3
             _driverBgfx.width = (uint32_t)arg1;
             _driverBgfx.height = (uint32_t)arg2;
             bgfx_reset((uint32_t)arg1, (uint32_t)arg2, BGFX_RESET_VSYNC, BGFX_TEXTURE_FORMAT_COUNT);
-            break;
-        case driverBgfxSyncCreateMesh:
-            if(_driverBgfxCreateMesh(*(driverBgfxMeshConfig*)arg1, (driverBgfxRenderItem*)arg2)){ logError("_driverBgfxCreateMesh Fail");
-                result = retFail; goto syncExit;
-            }
             break;
     }
 syncExit:

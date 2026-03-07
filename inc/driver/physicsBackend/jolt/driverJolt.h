@@ -23,7 +23,7 @@ typedef struct{
     driverJoltBodyType bodyType;
     float position[3], rotation[4], radius, mass, friction, restitution;
     bool isDynamic;
-} driverJoltBodyConfig;
+} driverJoltBody;
 typedef struct driverJolt{
     objectState objState;
     osalMutex objMutex;

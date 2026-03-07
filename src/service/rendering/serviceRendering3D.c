@@ -36,6 +36,39 @@ static void _serviceRendering3dUpdateCamera(void){
         _serviceRendering3d.camera.accumulatedMouseWheel = 0.0f;
     }
 }
+static void _serviceRendering3dSubmitRenderItem(serviceRendering3dRenderType type) {
+    for(uint32_t i = 0; i < _serviceRendering3d.entitiyCount; i++) {
+        if(_serviceRendering3d.entities[i].type == type) {
+            driverBgfxSync(driverBgfxSyncSubmitItem, (uintptr_t)&_serviceRendering3d.entities[i].item, 0, 0, 0);
+        }
+    }
+}
+static int _serviceRendering3dSetEntityConfig(serviceRendering3dRenderType type, driverBgfxMaterial* material, driverJoltBody* body, driverBgfxRenderItem* item){
+    if(!material || !body || !item){ logError("Invalid Params"); return retFail; }
+    switch(type){
+#if APP_BLACKHOLE_SIMULATION
+        case serviceRendering3dRenderTypeStarField:
+            break;
+        case serviceRendering3dRenderTypeBlackhole:
+            break;
+#endif
+        default: logError("Unknown Type");
+            return retFail;
+    }
+    return retOk;
+}
+static int _serviceRendering3dApplyTransform(serviceRendering3dEntity* entity, float* pos, float* rot, driverJoltBody* body){
+    if(!entity || !pos || !rot ||!body){ logError("Invalid Params"); return retFail; }
+    if(pos){
+        memcpy(body->position, pos, sizeof(float) * 3);
+        memcpy(entity->item.transform.pos, pos, sizeof(float) * 3);
+    }
+    if(rot){
+        memcpy(body->rotation, rot, sizeof(float) * 4);
+        memcpy(entity->item.transform.rot, rot, sizeof(float) * 4);
+    }
+    return retOk;
+}
 int serviceRendering3dClose(void){
     int result = retOk;
     if(_serviceRendering3d.objState >= objStateOpening){
@@ -76,28 +109,16 @@ int serviceRendering3dSync(uint16_t sync, uintptr_t arg1, uintptr_t arg2, uintpt
     osalMutexLock(&_serviceRendering3d.objMutex, -1);
     switch(sync){
         case serviceRendering3dSyncDrawFrame:{
-            driverJoltSync(driverJoltSyncStep, 0, 0, 0, 0);
-            for(uint32_t i = 0; i < _serviceRendering3d.entitiyCount; i++){
-                serviceRendering3dEntity* ent = &_serviceRendering3d.entities[i];
-                if(ent->joltBodyId > 0){
-                    driverJoltSync(driverJoltSyncGetBodyTransform, (uintptr_t)ent->joltBodyId, (uintptr_t)ent->renderInfo.trans.pos, (uintptr_t)ent->renderInfo.trans.rot, 0);
-                }
-            }
+            serviceRendering3dSync(serviceRendering3dSyncUpdatePhysics, 0, 0, 0, 0);
             _serviceRendering3dUpdateCamera();
-            driverBgfxSceneContext scene = {
-                .pItems = (uint8_t*)_serviceRendering3d.entities,
-                .itemCount = _serviceRendering3d.entitiyCount,
-                .itemStride = sizeof(serviceRendering3dEntity),
-                .itemOffset = offsetof(serviceRendering3dEntity, renderInfo),
-                .camPos[0] = _serviceRendering3d.camera.pos[0],
-                .camPos[1] = _serviceRendering3d.camera.pos[1],
-                .camPos[2] = _serviceRendering3d.camera.pos[2],
-                .camFront[0] = _serviceRendering3d.camera.front[0],
-                .camFront[1] = _serviceRendering3d.camera.front[1],
-                .camFront[2] = _serviceRendering3d.camera.front[2],
-                .fov = _serviceRendering3d.camera.fov,
-            };
-            driverBgfxSync(driverBgfxSyncRenderFrame, (uintptr_t)&scene, 0, 0, 0);
+            driverBgfxSync(driverBgfxSyncBeginFrame, (uintptr_t)&_serviceRendering3d.camera, 0, 0, 0);
+            // 백그라운드 패스
+            driverBgfxSync(driverBgfxSyncSetPass, driverBgfxPassTypeBackground, 0, 0, 0);
+            _serviceRendering3dSubmitRenderItem(serviceRendering3dRenderTypeStarField);
+            // 오브젝트 패스
+            driverBgfxSync(driverBgfxSyncSetPass, driverBgfxPassTypeObject, 0, 0, 0);
+            _serviceRendering3dSubmitRenderItem(serviceRendering3dRenderTypeBlackhole);
+            driverBgfxSync(driverBgfxSyncEndFrame, 0, 0, 0, 0);
             break;
         }
         case serviceRendering3dSyncCreateEntity:{
@@ -107,66 +128,18 @@ int serviceRendering3dSync(uint16_t sync, uintptr_t arg1, uintptr_t arg2, uintpt
             if(_serviceRendering3d.entitiyCount >= DRIVER_PHYSICS_BACKEND_JOLT_MAX_BODIES){ logError("Max entity count reached");
                 result = retFail; goto syncExit;
             }
-            serviceRendering3dEntity* ent = &_serviceRendering3d.entities[_serviceRendering3d.entitiyCount];
-            memset(&ent->renderInfo, 0, sizeof(ent->renderInfo));
-            ent->renderInfo.trans.scale = 1.0f; // 매우 중요!
-            serviceRendering3dRenderType renderType = (serviceRendering3dRenderType)arg1;
-            float* startPos = (float*)arg2;
-            float* startRot = (float*)arg3;
-            driverBgfxMeshConfig meshConfig = {0};
-            driverJoltBodyConfig bodyConfig = {0};
-            switch(renderType){
-#if APP_BLACKHOLE_SIMULATION
-                case serviceRendering3dRenderTypeBlackhole:
-                    meshConfig.meshType = driverBgfxMeshTypeSphere;
-                    meshConfig.segment = 5;
-                    meshConfig.sphere.radius = bodyConfig.radius = 5.0f;
-                    ent->renderInfo.trans.scale = 2.0f;
-                    // shaderParams1: x=Type, y=Mass, z=Spin, w=Time (예시)
-                    ent->renderInfo.shaderParams1.param1 = 0.0f; // TYPE_BLACKHOLE
-                    ent->renderInfo.shaderParams1.param2 = 5.0f; // Mass (radius 기반)
-                    ent->renderInfo.shaderParams1.param3 = 0.0f; // Spin
-                    ent->renderInfo.shaderParams1.param4 = 0.0f; // Time
-                    bodyConfig.bodyType = driverJoltBodyTypeSphere;
-                    break;
-                case serviceRendering3dRenderTypeStarField:
-                    meshConfig.meshType = driverBgfxMeshTypeSphere;
-                    meshConfig.segment = 5;
-                    meshConfig.sphere.radius = bodyConfig.radius = 1.0f;
-                    ent->renderInfo.trans.scale = 500.0f;
-                    // shaderParams1: x=Type, y=Density, z=Opacity, w=Reserved
-                    ent->renderInfo.shaderParams1.param1 = 2.0f; // TYPE_STARFIELD
-                    ent->renderInfo.shaderParams1.param2 = 1.0f; // Density
-                    ent->renderInfo.shaderParams1.param3 = 1.0f; // Opacity
-                    ent->renderInfo.shaderParams1.param4 = 0.0f;
-                    bodyConfig.bodyType = driverJoltBodyTypeSphere;
-                    break;
-#endif
+            serviceRendering3dEntity* entity = &_serviceRendering3d.entities[_serviceRendering3d.entitiyCount];
+            memset(&entity->item, 0, sizeof(entity->item));
+            driverBgfxMaterial material = {0}; driverJoltBody body = {0};
+            _serviceRendering3dSetEntityConfig((serviceRendering3dRenderType)arg1, &material, &body, &entity->item);
+            _serviceRendering3dApplyTransform(&entity->item, (float*)arg2, (float*)arg3, &body);
+            if(driverBgfxSync(driverBgfxSyncCreateMesh, (uintptr_t)&entity->item, 0, 0, 0)){ logError("driverBgfxSyncCreateMesh failed");
+                result = retFail; goto syncExit;
             }
-            driverBgfxSync(driverBgfxSyncCreateMesh, (uintptr_t)&meshConfig, (uintptr_t)&ent->renderInfo, 0, 0);
-            if(startPos){
-                bodyConfig.position[0] = startPos[0];
-                bodyConfig.position[1] = startPos[1];
-                bodyConfig.position[2] = startPos[2];
-                ent->renderInfo.trans.pos[0] = startPos[0];
-                ent->renderInfo.trans.pos[1] = startPos[1];
-                ent->renderInfo.trans.pos[2] = startPos[2];
-            }
-            if(startRot){
-                bodyConfig.rotation[0] = startRot[0];
-                bodyConfig.rotation[1] = startRot[1];
-                bodyConfig.rotation[2] = startRot[2];
-                bodyConfig.rotation[3] = startRot[3];
-                ent->renderInfo.trans.rot[0] = startRot[0];
-                ent->renderInfo.trans.rot[1] = startRot[1];
-                ent->renderInfo.trans.rot[2] = startRot[2];
-                ent->renderInfo.trans.rot[3] = startRot[3];
-            }
-            if(driverJoltSync(driverJoltSyncCreateBody, (uintptr_t)&bodyConfig, (uintptr_t)&ent->joltBodyId, 0, 0)){ logError("Jolt body creation failed");
+            if(driverJoltSync(driverJoltSyncCreateBody, (uintptr_t)&body, (uintptr_t)&entity->joltBodyId, 0, 0)){ logError("driverJoltSyncCreateBody failed");
                 result = retFail; goto syncExit;
             }
             _serviceRendering3d.entitiyCount++;
-            logDebug("Entity Created - ID: %d, Pos: %.1f, %.1f, %.1f", ent->joltBodyId, ent->renderInfo.trans.pos[0], ent->renderInfo.trans.pos[1], ent->renderInfo.trans.pos[2]);
             break;
         }
         case serviceRendering3dSyncUpdateCamera:{
@@ -178,6 +151,15 @@ int serviceRendering3dSync(uint16_t sync, uintptr_t arg1, uintptr_t arg2, uintpt
             _serviceRendering3d.camera.accumulatedMouseWheel += (float)(int16_t)(uint16_t)arg1;
             break;
         }
+        case serviceRendering3dSyncUpdatePhysics:
+            driverJoltSync(driverJoltSyncStep, 0, 0, 0, 0);
+            for(uint32_t i = 0; i < _serviceRendering3d.entitiyCount; i++){
+                serviceRendering3dEntity* ent = &_serviceRendering3d.entities[i];
+                if(ent->joltBodyId > 0){
+                    driverJoltSync(driverJoltSyncGetBodyTransform, (uintptr_t)ent->joltBodyId, (uintptr_t)ent->item.transform.pos, (uintptr_t)ent->item.transform.rot, 0);
+                }
+            }
+            break;
     }
 syncExit:
     osalMutexUnlock(&_serviceRendering3d.objMutex);

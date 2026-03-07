@@ -8,53 +8,48 @@
 
 enum{
     driverBgfxSyncInit = objSyncBegin,
-    driverBgfxSyncRenderFrame,
-    driverBgfxSyncUpdateViewport,
+    driverBgfxSyncBeginFrame,
+    driverBgfxSyncSetPass,
+    driverBgfxSyncSubmitItem,
+    driverBgfxSyncEndFrame,
     driverBgfxSyncCreateMesh,
+    driverBgfxSyncUpdateViewport,
 };
 enum{
     driverBgfxStateXXX = objStateBegin,
 };
 typedef enum{
+    driverBgfxPassTypeBackground,
+    driverBgfxPassTypeObject,
+    driverBgfxPassTypePostProcess,
+} driverBgfxPassType;
+typedef enum{
     driverBgfxMeshTypeSphere,
-    driverBgfxMeshTypeDisk,
+    driverBgfxMeshTypeQuad,
 } driverBgfxMeshType;
 
 typedef struct driverBgfxVertex{
     float x, y, z;
 } driverBgfxVertex;
-typedef struct driverBgfxTransform{
-    float pos[3], rot[4], scale;
-} driverBgfxTransform;
-typedef struct driverBgfxShaderParams{
-    float param1, param2, param3, param4;
-} driverBgfxShaderParams;
-typedef struct driverBgfxUniforms{
-    bgfx_uniform_handle_t camPos, shaderParams1, shaderParams2;
-} driverBgfxUniforms;
-typedef struct driverBgfxMeshConfig{
-    driverBgfxMeshType meshType;
-    int segment;
-    union{
-        struct{
-            float radius;
-        } sphere, disk;
-        struct{
-            float width, height, depth;
-        } cube;
-    };
-} driverBgfxMeshConfig;
 typedef struct driverBgfxMesh{
+    driverBgfxMeshType meshType;
     bgfx_vertex_buffer_handle_t vbh;
     bgfx_index_buffer_handle_t ibh;
     uint32_t numVertices;
     uint32_t numIndices;
 } driverBgfxMesh;
+typedef struct driverBgfxTransform{
+    float pos[3], rot[4], scale;
+} driverBgfxTransform;
+typedef struct driverBgfxMaterial{
+    bgfx_program_handle_t shader;
+    uint64_t state;
+    float uniforms[16];
+} driverBgfxMaterial;
 typedef struct driverBgfxRenderItem{
     driverBgfxMesh mesh;
-    driverBgfxTransform trans;
-    bgfx_program_handle_t shader;
-    driverBgfxShaderParams shaderParams1, shaderParams2;
+    driverBgfxMaterial material;
+    driverBgfxTransform transform;
 } driverBgfxRenderItem;
 typedef struct driverBgfxSceneContext{
     uint8_t* pItems;
@@ -65,14 +60,12 @@ typedef struct driverBgfx{
     objectState objState;
     osalMutex objMutex;
 #if APP_OS == OS_WIN32
-    HWND hwnd;
-    HDC hdc;
+    HWND hwnd; HDC hdc;
 #endif
+    uint16_t currViewId;
     uint32_t width, height;
     bgfx_shader_handle_t vertexShader, fragmentShader;
-    bgfx_program_handle_t shaderProgram;
     bgfx_vertex_layout_t layout;
-    driverBgfxUniforms uniforms;
 } driverBgfx;
 
 int driverBgfxOpen(void);
