@@ -90,10 +90,9 @@ static int _driverBgfxInit(void){
     _driverBgfx.shaderProgram = bgfx_create_program(_driverBgfx.vertexShader, _driverBgfx.fragmentShader, true);
     if(_driverBgfx.shaderProgram.idx == 0xffff){ logError("Failed to create shader program!"); }
     // 마테리얼
-    _driverBgfx.materialUniforms.surfaceColor = bgfx_create_uniform("surfaceColor", BGFX_UNIFORM_TYPE_VEC4, 1);
-    _driverBgfx.materialUniforms.surfaceParams = bgfx_create_uniform("surfaceParams", BGFX_UNIFORM_TYPE_VEC4, 1);
-    _driverBgfx.materialUniforms.diffuseMap = bgfx_create_uniform("diffuseMap", BGFX_UNIFORM_TYPE_SAMPLER, 1);
-    _driverBgfx.materialUniforms.noiseMap = bgfx_create_uniform("noiseMap", BGFX_UNIFORM_TYPE_SAMPLER, 1);
+    _driverBgfx.uniforms.camPos = bgfx_create_uniform("u_camPos", BGFX_UNIFORM_TYPE_VEC4, 1);
+    _driverBgfx.uniforms.shaderParams1 = bgfx_create_uniform("u_shaderParams1", BGFX_UNIFORM_TYPE_VEC4, 1);
+    _driverBgfx.uniforms.shaderParams2 = bgfx_create_uniform("u_shaderParams2", BGFX_UNIFORM_TYPE_VEC4, 1);
     return retOk; 
 }
 int driverBgfxClose(void){
@@ -148,7 +147,7 @@ int driverBgfxSync(uint16_t sync, uintptr_t arg1, uintptr_t arg2, uintptr_t arg3
             bgfxVec3 up = { 0.0f, 1.0f, 0.0f };
             bgfxMatViewLookat(&view, pos, target, up);
             // 프로젝션 행렬 설정 (FOV 등도 필요시 pScene에서 가져오도록 확장 가능)
-            bgfxMathProjPerspective(&proj, pScene->fov, (float)_driverBgfx.width / (float)_driverBgfx.height, 0.1f, 100.0f);
+            bgfxMathProjPerspective(&proj, pScene->fov, (float)_driverBgfx.width / (float)_driverBgfx.height, 0.1f, 1000.0f);
             bgfx_set_view_transform(0, view.m, proj.m);
             // 엔티티 순회 렌더링
             for(uint32_t i = 0; i < pScene->itemCount; i++){
@@ -161,16 +160,23 @@ int driverBgfxSync(uint16_t sync, uintptr_t arg1, uintptr_t arg2, uintptr_t arg3
                 bgfxMat4 mtx;
                 bgfxMathTransform(&mtx, *(bgfxVec3*)item->trans.pos, *(bgfxQuat*)item->trans.rot, item->trans.scale);
                 bgfx_set_transform(mtx.m, 1);
-                // 마테리얼 데이터 전송
-                bgfx_set_uniform(_driverBgfx.materialUniforms.surfaceColor, item->material.baseColor, 1);
-                float surfaceParams[4] = { item->material.emission, item->material.opacity, item->material.metallic, item->material.roughness };
-                bgfx_set_uniform(_driverBgfx.materialUniforms.surfaceParams, surfaceParams, 1);
+                // 셰이더 Uniform 데이터 전송
+                float camPos[4] = { pScene->camPos[0], pScene->camPos[1], pScene->camPos[2], 1.0f };
+                float params1[4] = { item->shaderParams1.param1, item->shaderParams1.param2, item->shaderParams1.param3, item->shaderParams1.param4 };
+                float params2[4] = { item->shaderParams2.param1, item->shaderParams2.param2, item->shaderParams2.param3, item->shaderParams2.param4 };
+                bgfx_set_uniform(_driverBgfx.uniforms.camPos, camPos, 1);
+                bgfx_set_uniform(_driverBgfx.uniforms.shaderParams1, params1, 1);
+                bgfx_set_uniform(_driverBgfx.uniforms.shaderParams2, params2, 1);
                 // 셰이더 결정 (개별 셰이더가 없으면 드라이버 기본 셰이더 사용)
                 bgfx_program_handle_t shaderProgram = _driverBgfx.shaderProgram;
                 if(item->shader.idx != 0 && item->shader.idx != 0xffff) shaderProgram = item->shader;
                 // 상태 설정 및 제출
-                uint64_t state = BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A | BGFX_STATE_DEPTH_TEST_LESS | BGFX_STATE_MSAA;
-                if(item->material.depthWrite) { state |= BGFX_STATE_WRITE_Z; }
+                uint64_t state = BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A | BGFX_STATE_MSAA;
+                if(item->shaderParams1.param1 == 2.0f) {
+                    state |= BGFX_STATE_DEPTH_TEST_ALWAYS; 
+                }else{
+                    state |= BGFX_STATE_DEPTH_TEST_LESS | BGFX_STATE_WRITE_Z;
+                }
                 bgfx_set_state(state, 0);
                 bgfx_submit(0, shaderProgram, 0, BGFX_DISCARD_ALL);
             }

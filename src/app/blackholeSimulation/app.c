@@ -103,10 +103,10 @@ int appOpen(void){
 #if 1
     float position[3] = {0.0f, 0.0f, 0.0f};
     float rotation[4] = {0.0f, 0.0f, 0.0f, 1.0f};
-    if(asyncPush(asyncTypeAsync, appMainEventServiceRenderingCreateEntity, serviceRendering3dRenderTypeBlackhole, position, rotation, 0)){logError("appMainEventPlatformWin32ShowWindow fail");
+    if(asyncPush(asyncTypeAsync, appMainEventServiceRenderingCreateEntity, serviceRendering3dRenderTypeStarField, position, rotation, 0)){logError("appMainEventPlatformWin32ShowWindow fail");
         return retFail;
     }
-    if(asyncPush(asyncTypeAsync, appMainEventServiceRenderingCreateEntity, serviceRendering3dRenderTypeAccretionDisk, position, rotation, 0)){logError("appMainEventPlatformWin32ShowWindow fail");
+    if(asyncPush(asyncTypeAsync, appMainEventServiceRenderingCreateEntity, serviceRendering3dRenderTypeBlackhole, position, rotation, 0)){logError("appMainEventPlatformWin32ShowWindow fail");
         return retFail;
     }
 #endif

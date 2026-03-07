@@ -122,31 +122,24 @@ int serviceRendering3dSync(uint16_t sync, uintptr_t arg1, uintptr_t arg2, uintpt
                     meshConfig.segment = 5;
                     meshConfig.sphere.radius = bodyConfig.radius = 5.0f;
                     ent->renderInfo.trans.scale = 2.0f;
-                    ent->renderInfo.material.baseColor[0] = 0.0f; // Black
-                    ent->renderInfo.material.baseColor[1] = 0.0f;
-                    ent->renderInfo.material.baseColor[2] = 0.0f;
-                    ent->renderInfo.material.baseColor[3] = 1.0f;
-                    ent->renderInfo.material.emission = 0.0f; // 빛 흡수
-                    ent->renderInfo.material.opacity = 1.0f;
-                    ent->renderInfo.material.depthWrite = true; // 제일 안쪽이라 뎁스 기록
+                    // shaderParams1: x=Type, y=Mass, z=Spin, w=Time (예시)
+                    ent->renderInfo.shaderParams1.param1 = 0.0f; // TYPE_BLACKHOLE
+                    ent->renderInfo.shaderParams1.param2 = 5.0f; // Mass (radius 기반)
+                    ent->renderInfo.shaderParams1.param3 = 0.0f; // Spin
+                    ent->renderInfo.shaderParams1.param4 = 0.0f; // Time
                     bodyConfig.bodyType = driverJoltBodyTypeSphere;
                     break;
-                case serviceRendering3dRenderTypeAccretionDisk:
-                    meshConfig.meshType = driverBgfxMeshTypeDisk;
-                    meshConfig.segment = 64;
-                    meshConfig.disk.radius = bodyConfig.radius = 10.0f;
-                    ent->renderInfo.trans.scale = 1.0f;
-                    ent->renderInfo.material.baseColor[0] = 1.0f; // 강렬한 오렌지/백색
-                    ent->renderInfo.material.baseColor[1] = 0.6f;
-                    ent->renderInfo.material.baseColor[2] = 0.2f;
-                    ent->renderInfo.material.baseColor[3] = 1.0f;
-                    ent->renderInfo.material.emission = 10.0f; // 엄청나게 밝음
-                    ent->renderInfo.material.opacity = 0.8f; // 약간의 투명감
-                    ent->renderInfo.material.metallic = 0.5f; // 가스 밀도로 재해석 가능
-                    ent->renderInfo.material.depthWrite = false; // 반투명 객체는 보통 false
-                    bodyConfig.bodyType = driverJoltBodyTypeDisk;
-                    break;
-                case serviceRendering3dRenderTypeBackground:
+                case serviceRendering3dRenderTypeStarField:
+                    meshConfig.meshType = driverBgfxMeshTypeSphere;
+                    meshConfig.segment = 5;
+                    meshConfig.sphere.radius = bodyConfig.radius = 1.0f;
+                    ent->renderInfo.trans.scale = 500.0f;
+                    // shaderParams1: x=Type, y=Density, z=Opacity, w=Reserved
+                    ent->renderInfo.shaderParams1.param1 = 2.0f; // TYPE_STARFIELD
+                    ent->renderInfo.shaderParams1.param2 = 1.0f; // Density
+                    ent->renderInfo.shaderParams1.param3 = 1.0f; // Opacity
+                    ent->renderInfo.shaderParams1.param4 = 0.0f;
+                    bodyConfig.bodyType = driverJoltBodyTypeSphere;
                     break;
 #endif
             }

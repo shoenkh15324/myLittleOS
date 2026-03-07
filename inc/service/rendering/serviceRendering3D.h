@@ -17,8 +17,7 @@ enum{
 typedef enum{
 #if APP_BLACKHOLE_SIMULATION
     serviceRendering3dRenderTypeBlackhole,
-    serviceRendering3dRenderTypeAccretionDisk,
-    serviceRendering3dRenderTypeBackground,
+    serviceRendering3dRenderTypeStarField,
 #endif
     serviceRendering3dRenderTypeEnd,
 } serviceRendering3dRenderType;
