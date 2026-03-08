@@ -8,6 +8,7 @@
 enum{
     serviceRendering3dSyncDrawFrame = objSyncBegin,
     serviceRendering3dSyncCreateEntity,
+    serviceRendering3dSyncUpdateViewport,
     serviceRendering3dSyncUpdateCamera,
     serviceRendering3dSyncUpdateZoom,
     serviceRendering3dSyncUpdatePhysics,
@@ -17,15 +18,16 @@ enum{
 };
 typedef enum{
 #if APP_BLACKHOLE_SIMULATION
-    serviceRendering3dRenderTypeBlackhole,
     serviceRendering3dRenderTypeStarField,
+    serviceRendering3dRenderTypeBlackhole,
 #endif
     serviceRendering3dRenderTypeEnd,
 } serviceRendering3dRenderType;
 
 typedef struct serviceRendering3dCamera{
-    float pos[3], front[3], up[3], yaw, pitch, fov;
+    float pos[4], front[3], up[3], yaw, pitch, fov;
     float accumulatedMouseDx, accumulatedMouseDy, accumulatedMouseWheel;
+    float viewMtx[16], projMtx[16];
 } serviceRendering3dCamera;
 typedef struct serviceRendering3dEntity{
     serviceRendering3dRenderType type;
@@ -36,12 +38,16 @@ typedef struct serviceRendering3dEntity{
     uint32_t joltBodyId;
 #endif
 } serviceRendering3dEntity;
+typedef struct serviceRendering3dScene{
+    uint32_t entityCount;
+    serviceRendering3dEntity entities[DRIVER_PHYSICS_BACKEND_JOLT_MAX_BODIES];
+    serviceRendering3dCamera camera;
+} serviceRendering3dScene;
 typedef struct serviceRendering3d{
     objectState objState;
     osalMutex objMutex;
-    serviceRendering3dEntity entities[DRIVER_PHYSICS_BACKEND_JOLT_MAX_BODIES];
-    uint32_t entitiyCount;
-    serviceRendering3dCamera camera;
+    uint16_t width, height;
+    serviceRendering3dScene activeScene;
 } serviceRendering3d;
 
 int serviceRendering3dOpen(void);

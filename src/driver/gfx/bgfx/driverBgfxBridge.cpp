@@ -22,8 +22,13 @@ void bgfxMathTransform(bgfxMat4* out, bgfxVec3 pos, bgfxQuat rot, float scale){
     bx::mtxScale(s, scale, scale, scale);
     bx::mtxFromQuaternion(r, *(bx::Quaternion*)&rot);
     bx::mtxTranslate(t, pos.v[0], pos.v[1], pos.v[2]);
-    bx::mtxMul(tmp, s, r);
-    bx::mtxMul(out->m, tmp, t);
+    bx::mtxMul(tmp, r, s);
+    bx::mtxMul(out->m, t, tmp);
+}
+void bgfxMathVec3Normalize(bgfxVec3* out){
+    bx::Vec3 vec{ out->v[0], out->v[1], out->v[2] };
+    vec = bx::normalize(vec);
+    out->v[0] = vec.x; out->v[1] = vec.y; out->v[2] = vec.z;
 }
 void bgfxMatViewLookat(bgfxMat4* out, bgfxVec3 pos, bgfxVec3 target, bgfxVec3 up){
     bx::mtxLookAt(out->m, *(bx::Vec3*)&pos, *(bx::Vec3*)&target, *(bx::Vec3*)&up);

@@ -15,8 +15,8 @@ enum{
     driverJoltStateXXX = objStateBegin,
 };
 typedef enum{
+    driverJoltBodyTypeNone,
     driverJoltBodyTypeSphere,
-    driverJoltBodyTypeDisk,
 } driverJoltBodyType;
 
 typedef struct{

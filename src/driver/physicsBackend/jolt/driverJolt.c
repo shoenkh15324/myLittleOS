@@ -36,6 +36,7 @@ int driverJoltOpen(void){
     if(!_driverJolt.joltCtx){ logError("joltInit fail");
         result = retFail; goto openExit;
     }
+    joltSetWorldGravity(_driverJolt.joltCtx, 0.0f, 0.0f, 0.0f);
     //
     _driverJolt.objState = objStateOpened;
 openExit:
@@ -63,11 +64,10 @@ int driverJoltSync(uint16_t sync, uintptr_t arg1, uintptr_t arg2, uintptr_t arg3
             driverJoltBody* bodyConfig = (driverJoltBody*)arg1;
             uint32_t bodyId = 0;
             switch(bodyConfig->bodyType){
+                case driverJoltBodyTypeNone:
+                    goto syncExit;
                 case driverJoltBodyTypeSphere:
                     bodyId = joltCreateSphere(_driverJolt.joltCtx, bodyConfig->position[0], bodyConfig->position[1], bodyConfig->position[2], bodyConfig->radius, bodyConfig->isDynamic);
-                    break;
-                case driverJoltBodyTypeDisk:
-                    bodyId = joltCreateDisk(_driverJolt.joltCtx, bodyConfig->position[0], bodyConfig->position[1], bodyConfig->position[2], bodyConfig->radius, bodyConfig->isDynamic);
                     break;
                 default: logError("Unknown body type: %d", bodyConfig->bodyType);
                     result = retFail;

@@ -133,6 +133,10 @@ int joltDeinit(joltContext* joltCtx){
     delete joltCtx;
     return retOk;
 }
+void joltSetWorldGravity(joltContext* joltCtx, float gx, float gy, float gz){
+    if(!joltCtx){ logError("Invalid Params"); return; }
+    joltCtx->physicsSystem->SetGravity(Vec3Arg(gx, gy, gz));
+}
 unsigned int joltCreateFloor(joltContext* joltCtx, float px, float py, float pz, float w, float h, float d){
     if(!joltCtx || w <= 0 || h <= 0 || d <= 0){ logError("Invalid Params"); return 0; }
     BodyInterface &bodyInterface = joltCtx->physicsSystem->GetBodyInterface();

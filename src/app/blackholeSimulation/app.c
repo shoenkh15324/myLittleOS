@@ -65,7 +65,7 @@ static void _appMainEventHandler(void* arg1, void* arg2, void* arg3){
             driverBgfxSync(driverBgfxSyncInit, 0, 0, 0, 0);
             break;
         case appMainEventBgfxUpdateViewport:
-            driverBgfxSync(driverBgfxSyncUpdateViewport, pAsync->arg1, pAsync->arg2, 0, 0);
+            serviceRendering3dSync(serviceRendering3dSyncUpdateViewport, pAsync->arg1, pAsync->arg2, 0, 0);
             break;
         // Rendering Service
         case appMainEventServiceRenderingCreateEntity:

@@ -15,6 +15,7 @@ typedef struct { float q[4]; }  bgfxQuat;
 // 2. 변환(Transform) 관련 추상화
 void bgfxMathIdentity(bgfxMat4* out);
 void bgfxMathTransform(bgfxMat4* out, bgfxVec3 pos, bgfxQuat rot, float scale);
+void bgfxMathVec3Normalize(bgfxVec3* out);
 // 3. 카메라/뷰 관련 추상화
 void bgfxMatViewLookat(bgfxMat4* out, bgfxVec3 pos, bgfxVec3 target, bgfxVec3 up);
 void bgfxMathProjPerspective(bgfxMat4* out, float fovDeg, float aspect, float nearZ, float farZ);
