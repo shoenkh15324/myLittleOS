@@ -62,6 +62,7 @@ static int _driverBgfxDestroyMesh(driverBgfxRenderItem* item){
     return retOk;
 }
 static bgfx_shader_handle_t _driverBgfxLoadShader(const char* filename){
+    if(!filename){ logError("Invalid Param"); return; }
     FILE* file = fopen(filename, "rb");
     if(!file){ logError("Failed to open shader file: %s", filename);
         return (bgfx_shader_handle_t){0xffff};
@@ -73,6 +74,20 @@ static bgfx_shader_handle_t _driverBgfxLoadShader(const char* filename){
     fread(mem->data, 1, size, file);
     fclose(file);
     return bgfx_create_shader(mem);
+}
+static bgfx_texture_handle_t  _driverBgfxLoadCubemap(const char* filename){
+    if(!filename){ logError("Invalid Param"); return; }
+    FILE* file = fopen(filename, "rb");
+    if(!file){ logError("Failed to open cubemap: %s", filename);
+        return (bgfx_texture_handle_t){UINT16_MAX};
+    }
+    fseek(file, 0, SEEK_END);
+    long size = ftell(file);
+    fseek(file, 0, SEEK_SET);
+    const bgfx_memory_t* mem = bgfx_alloc(size);
+    fread(mem->data, 1, size, file);
+    fclose(file);
+    return bgfx_create_texture(mem, BGFX_TEXTURE_NONE, 0, NULL);
 }
 static bgfx_program_handle_t _driverBgfxGetShaderProgram(driverBgfxShaderType type){
     switch(type){
@@ -132,9 +147,17 @@ static int _driverBgfxSetShaders(void){
     }
     return retOk;
 }
+static int _driverBgfxSetCubemap(void){
+    _driverBgfx.hSkybox = _driverBgfxLoadCubemap("../assets/textures/nebula1.dds");
+    if(_driverBgfx.hSkybox.idx == UINT16_MAX){ logError("Skybox load fail");
+        return retFail;
+    }
+    return retOk;
+}
 static int _driverBgfxSetUniforms(void){
     _driverBgfx.hShaderParams1 = bgfx_create_uniform("u_shaderParams1", BGFX_UNIFORM_TYPE_VEC4, 1);
     _driverBgfx.hCamPos = bgfx_create_uniform("u_camPos", BGFX_UNIFORM_TYPE_VEC4, 1);
+    _driverBgfx.hSkyboxSampler = bgfx_create_uniform("s_hdr", BGFX_UNIFORM_TYPE_SAMPLER, 1);
     return retOk;
 }
 static int _driverBgfxInit(void){
@@ -142,6 +165,7 @@ static int _driverBgfxInit(void){
     if(_driverBgfxInitRenderer()){ logError("_driverBgfxInitRenderer fail"); return retFail; }
     if(_driverBgfxCreateVertexLayout()){ logError("_driverBgfxCreateVertexLayout fail"); return retFail; }
     if(_driverBgfxSetShaders()){ logError("_driverBgfxSetShaders fail"); return retFail; }
+    if(_driverBgfxSetCubemap()){ logError("_driverBgfxSetCubemap fail"); return retFail; }
     if(_driverBgfxSetUniforms()){ logError("_driverBgfxSetUniforms fail"); return retFail; }
     logInfo("driverBgfx opened (Size:%d X %d)", _driverBgfx.width, _driverBgfx.height);
     return retOk;
@@ -218,13 +242,14 @@ int driverBgfxSync(uint16_t sync, uintptr_t arg1, uintptr_t arg2, uintptr_t arg3
             }
             bgfx_set_vertex_buffer(0, item->mesh.vbh, 0, item->mesh.numVertices);
             bgfx_set_index_buffer(item->mesh.ibh, 0, item->mesh.numIndices);
+            bgfx_set_texture(0, _driverBgfx.hSkyboxSampler, _driverBgfx.hSkybox, BGFX_SAMPLER_NONE);
             bgfxMat4 mtx;
             bgfxMathTransform(&mtx, *(bgfxVec3*)item->transform.pos, *(bgfxQuat*)item->transform.rot, item->transform.scale);
             bgfx_set_transform(mtx.m, 1);
             bgfx_set_uniform(_driverBgfx.hShaderParams1, &item->material.shaderParams, 1);
             uint64_t state = BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A;
             if(item->material.shaderParams.param1 == 0.0f){ // 배경(SkySphere)인 경우
-                state |= BGFX_STATE_CULL_CW | BGFX_STATE_DEPTH_TEST_ALWAYS; // 시계 방향(뒷면) 그리기 / 깊이 테스트 유지 (배경이 젤 뒤에 가게)
+                state |= BGFX_STATE_CULL_CW | BGFX_STATE_DEPTH_TEST_LEQUAL | BGFX_STATE_WRITE_Z;
             }else{
                 state |= BGFX_STATE_CULL_CCW | BGFX_STATE_DEPTH_TEST_LESS | BGFX_STATE_WRITE_Z;
             }

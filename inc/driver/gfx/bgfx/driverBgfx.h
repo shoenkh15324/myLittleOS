@@ -78,8 +78,10 @@ typedef struct driverBgfx{
     uint16_t currViewId;
     uint32_t width, height;
     bgfx_vertex_layout_t layout;
-    bgfx_uniform_handle_t hShaderParams1, hCamPos;
+    bgfx_uniform_handle_t hShaderParams1, hCamPos, hSkyboxSampler;
     driverBgfxShaders shaders[driverBgfxShaderTypeEnd];
+    bgfx_texture_handle_t hSkybox;
+
 } driverBgfx;
 
 int driverBgfxOpen(void);
